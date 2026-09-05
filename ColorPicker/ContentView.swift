@@ -6,56 +6,33 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
+
+    // Note: an @State default value can't reference a sibling @AppStorage property
+    // (property initializers run before `self` exists), so we read the same key
+    // straight out of UserDefaults here to seed the initial value.
+    @State private var isOnboardingVisible = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
+    @State private var savedColorsStore = SavedColorsStore()
+    @State private var paletteStore = PaletteStore()
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+        HomeView()
+            .environment(savedColorsStore)
+            .environment(paletteStore)
+            .overlay {
+                if isOnboardingVisible {
+                    OnboardingView(isOnboardingVisible: $isOnboardingVisible)
+                        .transition(.opacity)
                 }
             }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
+            .animation(.easeInOut, value: isOnboardingVisible)
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }
