@@ -16,6 +16,12 @@ struct SavedColor: Identifiable, Codable, Equatable {
     var ral: RALColor
     var note: String
     var createdAt: Date
+
+    var shareText: String {
+        var text = "\(ral.code) — \(ral.nameRu)\nHEX: \(rgb.hexString)\nRGB: \(rgb.rgbString)\nCMYK: \(rgb.cmykString)"
+        if !note.isEmpty { text += "\n\(note)" }
+        return text
+    }
 }
 
 // MARK: - SavedColorsStore

@@ -199,7 +199,7 @@ struct PalettesView: View {
             LazyVStack(spacing: 12) {
                 ForEach(paletteStore.palettes) { palette in
                     NavigationLink {
-                        PaletteDetailView(mode: .browse(palette: palette))
+                        PaletteDetailView(palette: palette)
                     } label: {
                         PaletteRow(palette: palette)
                     }

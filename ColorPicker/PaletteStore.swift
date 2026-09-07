@@ -16,6 +16,10 @@ struct Palette: Identifiable, Codable, Equatable {
     var colors: [SavedColor]
     var createdAt: Date
 
+    var shareText: String {
+        name + "\n\n" + colors.map(\.shareText).joined(separator: "\n\n")
+    }
+
     static func generatedName(date: Date = Date()) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
@@ -44,6 +48,13 @@ final class PaletteStore {
         palettes.insert(palette, at: 0)
         save()
         return palette
+    }
+
+    func add(colors: [SavedColor], to paletteID: UUID) {
+        guard !colors.isEmpty,
+              let index = palettes.firstIndex(where: { $0.id == paletteID }) else { return }
+        palettes[index].colors.append(contentsOf: colors)
+        save()
     }
 
     func remove(_ palette: Palette) {

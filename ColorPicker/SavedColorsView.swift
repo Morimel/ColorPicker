@@ -21,6 +21,7 @@ struct SavedColorsView: View {
 
     @State private var selectedTab: Tab = .colors
     @State private var paletteToBrowse: Palette?
+    @State private var showsCopiedToast = false
 
     @State private var isSelecting = false
     @State private var selectedColorIDs: Set<UUID> = []
@@ -30,6 +31,17 @@ struct SavedColorsView: View {
         switch selectedTab {
         case .colors: !selectedColorIDs.isEmpty
         case .palettes: !selectedPaletteIDs.isEmpty
+        }
+    }
+
+    private var selectionShareText: String {
+        switch selectedTab {
+        case .colors:
+            savedColorsStore.savedColors.filter { selectedColorIDs.contains($0.id) }
+                .map(\.shareText).joined(separator: "\n\n")
+        case .palettes:
+            paletteStore.palettes.filter { selectedPaletteIDs.contains($0.id) }
+                .map(\.shareText).joined(separator: "\n\n")
         }
     }
 
@@ -51,6 +63,7 @@ struct SavedColorsView: View {
             content
         }
         .background(Color(.systemBackground))
+        .savedToast(isPresented: $showsCopiedToast, text: "Скопировано")
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -70,6 +83,12 @@ struct SavedColorsView: View {
                     .font(.headline)
             }
             if isSelecting {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: selectionShareText) {
+                        Label("Поделиться", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(!hasSelection)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: toggleSelectAll) {
                         Image(systemName: isAllSelected ? "checkmark.circle.fill" : "checkmark.circle")
@@ -93,7 +112,9 @@ struct SavedColorsView: View {
             }
         }
         .sheet(item: $paletteToBrowse) { palette in
-            PaletteDetailView(mode: .browse(palette: palette))
+            NavigationStack {
+                PaletteDetailView(palette: palette)
+            }
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
@@ -160,7 +181,15 @@ struct SavedColorsView: View {
                         if isSelecting {
                             selectionIndicator(isSelected: selectedColorIDs.contains(entry.id))
                         }
-                        ColorInfoCard(rgb: entry.rgb, ral: entry.ral)
+                        ColorInfoCard(rgb: entry.rgb, ral: entry.ral,
+                                      onCopied: isSelecting ? nil : { showsCopiedToast = true })
+                        if !isSelecting {
+                            ShareLink(item: entry.shareText) {
+                                Label("Поделиться цветом", systemImage: "square.and.arrow.up")
+                                    .labelStyle(.iconOnly)
+                            }
+                            .buttonStyle(.borderless)
+                        }
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -173,9 +202,7 @@ struct SavedColorsView: View {
                     .listRowBackground(Color.clear)
                 }
                 .onDelete { offsets in
-                    for index in offsets {
-                        savedColorsStore.remove(savedColorsStore.savedColors[index])
-                    }
+                    savedColorsStore.remove(at: offsets)
                 }
             }
             .listStyle(.plain)
@@ -209,9 +236,7 @@ struct SavedColorsView: View {
                     .listRowBackground(Color.clear)
                 }
                 .onDelete { offsets in
-                    for index in offsets {
-                        paletteStore.remove(paletteStore.palettes[index])
-                    }
+                    paletteStore.remove(at: offsets)
                 }
             }
             .listStyle(.plain)

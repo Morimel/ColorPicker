@@ -23,11 +23,10 @@ struct CameraColorPickerView: View {
     @State private var isFlashOn = false
     @FocusState private var isNoteFocused: Bool
 
-    /// Colors the user has captured with "+" during this session, offered up
-    /// as a palette the same way the photo picker's dominant-colors strip is.
-    @State private var capturedColors: [RGBColor] = []
-    @State private var isPaletteDetailPresented = false
-    @State private var showPaletteSavedToast = false
+    /// Colors captured with "+" during this session, kept in memory only
+    /// until "Save" commits them all to `SavedColorsStore` at once.
+    @State private var stagedColors: [SavedColor] = []
+    @State private var showSavedToast = false
 
     private var nearestRAL: RALColor { RALPalette.nearestRALColor(to: detectedColor) }
 
@@ -56,10 +55,11 @@ struct CameraColorPickerView: View {
                     .font(.headline)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: shareText) {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(.primary)
+                Button(action: saveStagedColors) {
+                    Image(systemName: "tray.and.arrow.down.fill")
+                        .foregroundStyle(stagedColors.isEmpty ? .tertiary : .primary)
                 }
+                .disabled(stagedColors.isEmpty)
             }
         }
         .onAppear(perform: requestPermissionIfNeeded)
@@ -68,12 +68,7 @@ struct CameraColorPickerView: View {
             cameraController.setTorchEnabled(false)
             cameraController.stop()
         }
-        .sheet(isPresented: $isPaletteDetailPresented) {
-            PaletteDetailView(mode: .create(colors: capturedColors), onSaved: { showPaletteSavedToast = true })
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        }
-        .savedToast(isPresented: $showPaletteSavedToast, text: "Добавлено в Палитры")
+        .savedToast(isPresented: $showSavedToast, text: "Сохранено")
     }
 
     @ViewBuilder
@@ -167,36 +162,28 @@ struct CameraColorPickerView: View {
                         .fill(Color(.secondarySystemBackground))
                 )
 
-            if !capturedColors.isEmpty {
-                capturedColorsStrip
+            if !stagedColors.isEmpty {
+                stagedColorsStrip
             }
         }
         .padding(16)
     }
 
     @ViewBuilder
-    private var capturedColorsStrip: some View {
+    private var stagedColorsStrip: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Палитра из захваченных цветов")
+            Text("Захваченные цвета")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 0) {
-                ForEach(Array(capturedColors.enumerated()), id: \.offset) { _, color in
-                    Color(hex: color.hexString)
+                ForEach(stagedColors) { color in
+                    Color(hex: color.rgb.hexString)
                 }
             }
             .frame(height: 56)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .contentShape(Rectangle())
-            .onTapGesture {
-                isPaletteDetailPresented = true
-            }
         }
-    }
-
-    private var shareText: String {
-        "\(nearestRAL.code), \(detectedColor.hexString), RGB \(detectedColor.rgbString), CMYK \(detectedColor.cmykString)"
     }
 
     private func toggleFlash() {
@@ -205,8 +192,17 @@ struct CameraColorPickerView: View {
     }
 
     private func addCurrentColor() {
-        savedColorsStore.add(rgb: detectedColor, note: note)
-        capturedColors.append(detectedColor)
+        let entry = SavedColor(rgb: detectedColor, ral: nearestRAL, note: note, createdAt: Date())
+        stagedColors.append(entry)
+    }
+
+    private func saveStagedColors() {
+        guard !stagedColors.isEmpty else { return }
+        for color in stagedColors {
+            savedColorsStore.add(rgb: color.rgb, note: color.note)
+        }
+        stagedColors.removeAll()
+        showSavedToast = true
     }
 
     private func requestPermissionIfNeeded() {

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 /// Reusable row that presents a sampled/saved color: swatch on the left,
 /// RAL name + hex/cmyk/rgb detail stack on the right. Used in the camera
@@ -23,6 +24,7 @@ struct ColorInfoCard: View {
     var showsBorder: Bool = false
     var trailingAction: (() -> Void)? = nil
     var trailingIcon: String = "plus.circle.fill"
+    var onCopied: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 14) {
@@ -50,6 +52,21 @@ struct ColorInfoCard: View {
 
             Spacer(minLength: 0)
 
+            if let onCopied {
+                Menu {
+                    Button("HEX: \(hex)") { copy(hex, onCopied: onCopied) }
+                    Button("RGB: \(rgb)") { copy(rgb, onCopied: onCopied) }
+                    Button("CMYK: \(cmyk)") { copy(cmyk, onCopied: onCopied) }
+                } label: {
+                    Label("Копировать", systemImage: "doc.on.doc")
+                        .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(Color.tealAccent)
+                .accessibilityLabel("Копировать цвет \(hex)")
+            }
+
             if let trailingAction {
                 Button(action: trailingAction) {
                     Image(systemName: trailingIcon)
@@ -70,10 +87,15 @@ struct ColorInfoCard: View {
             }
         }
     }
+
+    private func copy(_ value: String, onCopied: () -> Void) {
+        UIPasteboard.general.string = value
+        onCopied()
+    }
 }
 
 extension ColorInfoCard {
-    init(rgb: RGBColor, ral: RALColor, showsBorder: Bool = false, trailingAction: (() -> Void)? = nil, trailingIcon: String = "plus.circle.fill") {
+    init(rgb: RGBColor, ral: RALColor, showsBorder: Bool = false, trailingAction: (() -> Void)? = nil, trailingIcon: String = "plus.circle.fill", onCopied: (() -> Void)? = nil) {
         self.init(
             swatch: Color(hex: rgb.hexString),
             ralName: ral.nameRu,
@@ -83,7 +105,8 @@ extension ColorInfoCard {
             rgb: rgb.rgbString,
             showsBorder: showsBorder,
             trailingAction: trailingAction,
-            trailingIcon: trailingIcon
+            trailingIcon: trailingIcon,
+            onCopied: onCopied
         )
     }
 }

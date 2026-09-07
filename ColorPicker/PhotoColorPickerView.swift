@@ -49,8 +49,12 @@ struct PhotoColorPickerView: View {
     @State private var activeDragMode: DragMode?
 
     @State private var note: String = ""
-    @State private var isPaletteDetailPresented = false
-    @State private var showPaletteSavedToast = false
+    @State private var showSavedToast = false
+
+    /// How far above the touch point the loupe floats, so the finger doesn't
+    /// block the view of what's being magnified (mirrors iOS's own
+    /// text-selection loupe).
+    private let loupeVerticalOffset: CGFloat = 70
 
     private var zoomScale: CGFloat {
         min(max(totalZoom + currentZoomDelta, 1), 5)
@@ -87,27 +91,18 @@ struct PhotoColorPickerView: View {
                     .font(.headline)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                if let activeMarker {
-                    ShareLink(item: shareText(for: activeMarker)) {
-                        Image(systemName: "square.and.arrow.up")
-                            .foregroundStyle(.primary)
-                    }
-                } else {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(.tertiary)
+                Button(action: savePalette) {
+                    Image(systemName: "tray.and.arrow.down.fill")
+                        .foregroundStyle(paletteMarkers.isEmpty ? .tertiary : .primary)
                 }
+                .disabled(paletteMarkers.isEmpty)
             }
         }
         .photosPicker(isPresented: $isPickerPresented, selection: $selectedItem, matching: .images)
         .onChange(of: selectedItem) { _, newItem in
             loadImage(from: newItem)
         }
-        .sheet(isPresented: $isPaletteDetailPresented) {
-            PaletteDetailView(mode: .create(colors: paletteMarkers.map(\.rgb)), onSaved: { showPaletteSavedToast = true })
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        }
-        .savedToast(isPresented: $showPaletteSavedToast, text: "Добавлено в Палитры")
+        .savedToast(isPresented: $showSavedToast, text: "Палитра сохранена")
     }
 
     // MARK: Image section
@@ -137,6 +132,32 @@ struct PhotoColorPickerView: View {
 
                 pickImageButton
                     .padding(16)
+
+                if activeDragMode == .moveMarker, let activeMarker, let selectedImage {
+                    let point = screenPosition(for: activeMarker.position, containerSize: containerSize)
+                    let loupeCenter = CGPoint(x: point.x, y: point.y - loupeVerticalOffset)
+
+                    // A thin stem from the loupe down to the actual sampled
+                    // point, drawn under the loupe (which covers the segment
+                    // that overlaps its own circle) — makes it visually
+                    // unambiguous which point is being magnified, the same
+                    // way iOS's own text-selection loupe stays tethered to
+                    // the touch it's magnifying.
+                    Path { path in
+                        path.move(to: loupeCenter)
+                        path.addLine(to: point)
+                    }
+                    .stroke(Color.white, lineWidth: 3)
+                    .shadow(color: .black.opacity(0.3), radius: 2)
+                    .allowsHitTesting(false)
+
+                    LoupeView(
+                        crop: loupeCrop(in: selectedImage, atNormalizedPoint: activeMarker.position, pixelSize: Int(LoupeView.cropPixelSize)),
+                        tint: Color(hex: activeMarker.rgb.hexString)
+                    )
+                    .position(x: loupeCenter.x, y: loupeCenter.y)
+                    .allowsHitTesting(false)
+                }
             }
         }
         .frame(height: UIScreen.main.bounds.height * 0.6)
@@ -159,7 +180,10 @@ struct PhotoColorPickerView: View {
                     .position(x: point.x, y: point.y)
             }
 
-            if let activeMarker {
+            // Hidden while the loupe is up (drawn separately, in unscaled
+            // container coordinates, over in `imageSection`) so the finger
+            // isn't left resting on a duplicate indicator underneath it.
+            if let activeMarker, activeDragMode != .moveMarker {
                 let point = containerPoint(forNormalizedPoint: activeMarker.position, containerSize: containerSize)
                 ActiveMarkerView()
                     .position(x: point.x, y: point.y)
@@ -231,10 +255,16 @@ struct PhotoColorPickerView: View {
 
     private var paletteStrip: some View {
         ColorStripView(colors: paletteMarkers.map(\.rgb))
-            .contentShape(Rectangle())
-            .onTapGesture {
-                isPaletteDetailPresented = true
-            }
+    }
+
+    private func savePalette() {
+        guard !paletteMarkers.isEmpty else { return }
+        let colors = paletteMarkers.map { marker in
+            SavedColor(rgb: marker.rgb, ral: RALPalette.nearestRALColor(to: marker.rgb), note: "", createdAt: Date())
+        }
+        paletteStore.add(colors: colors)
+        paletteMarkers = []
+        showSavedToast = true
     }
 
     // MARK: Marker actions
@@ -412,6 +442,30 @@ struct PhotoColorPickerView: View {
         hypot(a.x - b.x, a.y - b.y)
     }
 
+    /// Crops a small pixel-aligned square out of the source image centered on
+    /// `normalizedPoint`, using the exact same pixel-indexing as
+    /// `sampleColor(in:atNormalizedPoint:)` so the loupe's center cell always
+    /// lines up with the color actually being read.
+    private func loupeCrop(in image: UIImage, atNormalizedPoint normalizedPoint: CGPoint, pixelSize: Int) -> UIImage? {
+        guard let cgImage = image.cgImage else { return nil }
+
+        let width = cgImage.width
+        let height = cgImage.height
+        guard width > 0, height > 0 else { return nil }
+
+        let centerX = min(max(Int(normalizedPoint.x * CGFloat(width)), 0), width - 1)
+        let centerY = min(max(Int(normalizedPoint.y * CGFloat(height)), 0), height - 1)
+
+        let cropWidth = min(pixelSize, width)
+        let cropHeight = min(pixelSize, height)
+        let originX = min(max(centerX - cropWidth / 2, 0), width - cropWidth)
+        let originY = min(max(centerY - cropHeight / 2, 0), height - cropHeight)
+
+        let rect = CGRect(x: originX, y: originY, width: cropWidth, height: cropHeight)
+        guard let cropped = cgImage.cropping(to: rect) else { return nil }
+        return UIImage(cgImage: cropped)
+    }
+
     // MARK: Photo loading
 
     private func loadImage(from item: PhotosPickerItem?) {
@@ -437,23 +491,27 @@ struct PhotoColorPickerView: View {
             }
         }
     }
-
-    private func shareText(for marker: PhotoColorMarker) -> String {
-        let match = RALPalette.displayMatch(for: marker.rgb)
-        return "\(match.code), \(marker.rgb.hexString), RGB \(marker.rgb.rgbString), CMYK \(marker.rgb.cmykString)"
-    }
 }
 
 // MARK: - Markers
 
-/// The point currently under review — a large ring, same visual weight as
-/// the reticle used elsewhere, but bigger than a saved marker.
+/// The point currently under review, shown only while it's NOT being
+/// dragged (dragging shows the magnifying `LoupeView` instead) — a small
+/// precise ring+crosshair, matching the reticle used on the Camera screen.
 private struct ActiveMarkerView: View {
     var body: some View {
-        Circle()
-            .stroke(Color.white, lineWidth: 3)
-            .frame(width: 64, height: 64)
-            .shadow(color: .black.opacity(0.3), radius: 3)
+        ZStack {
+            Circle()
+                .stroke(Color.white, lineWidth: 2)
+                .frame(width: 32, height: 32)
+            Rectangle()
+                .fill(Color.white)
+                .frame(width: 10, height: 1.5)
+            Rectangle()
+                .fill(Color.white)
+                .frame(width: 1.5, height: 10)
+        }
+        .shadow(color: .black.opacity(0.3), radius: 3)
     }
 }
 
@@ -464,6 +522,54 @@ private struct SavedMarkerView: View {
             .stroke(Color.white, lineWidth: 2)
             .frame(width: 28, height: 28)
             .shadow(color: .black.opacity(0.3), radius: 2)
+    }
+}
+
+// MARK: - LoupeView
+
+/// A circular magnifier shown while dragging the active picking point: a
+/// nearest-neighbor-scaled crop of the source image, so individual source
+/// pixels read as a visible grid, with a thin square marking the exact
+/// pixel being sampled and an outer ring tinted to the live sampled color.
+private struct LoupeView: View {
+    static let diameter: CGFloat = 130
+    static let contentDiameter: CGFloat = 112
+    static let ringWidth: CGFloat = 8
+    static let cropPixelSize: CGFloat = 21
+
+    let crop: UIImage?
+    let tint: Color
+
+    private var cellSize: CGFloat { Self.contentDiameter / Self.cropPixelSize }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.white)
+                .frame(width: Self.diameter, height: Self.diameter)
+
+            Group {
+                if let crop {
+                    Image(uiImage: crop)
+                        .interpolation(.none)
+                        .resizable()
+                } else {
+                    Color(.systemGray4)
+                }
+            }
+            .frame(width: Self.contentDiameter, height: Self.contentDiameter)
+            .clipShape(Circle())
+
+            Rectangle()
+                .stroke(Color.black.opacity(0.35), lineWidth: 1)
+                .frame(width: cellSize, height: cellSize)
+
+            Circle()
+                .stroke(tint, lineWidth: Self.ringWidth)
+                .frame(width: Self.diameter - Self.ringWidth, height: Self.diameter - Self.ringWidth)
+        }
+        .frame(width: Self.diameter, height: Self.diameter)
+        .shadow(color: .black.opacity(0.3), radius: 10, y: 4)
     }
 }
 

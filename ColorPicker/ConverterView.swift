@@ -24,6 +24,7 @@ struct ConverterView: View {
     @State private var currentColor = RGBColor(r: 0, g: 0, b: 0)
     @State private var hasEnteredColor = false
     @State private var showSavedToast = false
+    @State private var showsColorPicker = false
 
     @State private var hexText = "#000000"
     @State private var rText = "0"
@@ -33,7 +34,6 @@ struct ConverterView: View {
     @State private var mText = "0"
     @State private var yText = "0"
     @State private var kText = "0"
-    @State private var pickerColor = Color.black
 
     @FocusState private var focusedField: ConverterField?
 
@@ -74,12 +74,26 @@ struct ConverterView: View {
         .onChange(of: focusedField) { oldValue, _ in
             commit(field: oldValue)
         }
-        .onChange(of: pickerColor) { _, newColor in
-            currentColor = newColor.rgbColor()
-            hasEnteredColor = true
-            syncFields(skipping: nil)
-        }
         .savedToast(isPresented: $showSavedToast, text: "Сохранено")
+        .sheet(isPresented: $showsColorPicker) {
+            NavigationStack {
+                ConverterColorPicker(color: Binding(
+                    get: { currentColor },
+                    set: {
+                        currentColor = $0
+                        hasEnteredColor = true
+                        syncFields(skipping: nil)
+                    }
+                ))
+                .navigationTitle("Выбрать цвет")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Готово") { showsColorPicker = false }
+                    }
+                }
+            }
+        }
     }
 
     // MARK: Fields
@@ -120,9 +134,25 @@ struct ConverterView: View {
     private var colorPickerRow: some View {
         HStack(spacing: 12) {
             Text("Выбрать цвет:")
-                .foregroundStyle(.primary)
-            ColorPicker("Выбрать цвет", selection: $pickerColor, supportsOpacity: false)
-                .labelsHidden()
+            Button {
+                commit(field: focusedField)
+                focusedField = nil
+                showsColorPicker = true
+            } label: {
+                Circle()
+                    .fill(Color(hex: currentColor.hexString))
+                    .frame(width: 28, height: 28)
+                    .padding(4)
+                    .overlay {
+                        Circle().strokeBorder(
+                            AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red], center: .center),
+                            lineWidth: 3
+                        )
+                    }
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel("Выбрать цвет")
+            .accessibilityValue(currentColor.hexString)
             Spacer(minLength: 0)
         }
     }
@@ -201,8 +231,6 @@ struct ConverterView: View {
         if field != .m { mText = "\(cmyk.m)" }
         if field != .y { yText = "\(cmyk.y)" }
         if field != .k { kText = "\(cmyk.k)" }
-
-        pickerColor = Color(hex: currentColor.hexString)
     }
 
     // MARK: Save
@@ -213,6 +241,78 @@ struct ConverterView: View {
         Task {
             try? await Task.sleep(nanoseconds: 700_000_000)
             dismiss()
+        }
+    }
+}
+
+private struct ConverterColorPicker: View {
+    @Binding var color: RGBColor
+
+    var body: some View {
+        if #available(iOS 26.0, *) {
+            NativeConverterColorPicker(color: $color)
+        } else {
+            // Earlier iOS versions cannot disable the native eyedropper.
+            Form {
+                ColorInfoCard(rgb: color, ral: RALPalette.nearestRALColor(to: color))
+                channel("R", keyPath: \.r)
+                channel("G", keyPath: \.g)
+                channel("B", keyPath: \.b)
+            }
+        }
+    }
+
+    private func channel(_ label: String, keyPath: WritableKeyPath<RGBColor, Int>) -> some View {
+        VStack(alignment: .leading) {
+            Text("\(label): \(color[keyPath: keyPath])")
+            Slider(value: Binding(
+                get: { Double(color[keyPath: keyPath]) },
+                set: { color[keyPath: keyPath] = Int($0.rounded()) }
+            ), in: 0...255, step: 1)
+            .accessibilityLabel(label)
+        }
+    }
+}
+
+@available(iOS 26.0, *)
+private struct NativeConverterColorPicker: UIViewControllerRepresentable {
+    @Binding var color: RGBColor
+
+    func makeUIViewController(context: Context) -> UIColorPickerViewController {
+        let picker = UIColorPickerViewController()
+        picker.supportsAlpha = false
+        picker.supportsEyedropper = false
+        picker.selectedColor = UIColor(Color(hex: color.hexString))
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ picker: UIColorPickerViewController, context: Context) {
+        context.coordinator.parent = self
+        let selected = UIColor(Color(hex: color.hexString))
+        if !picker.selectedColor.isEqual(selected) {
+            picker.selectedColor = selected
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
+
+    final class Coordinator: NSObject, UIColorPickerViewControllerDelegate {
+        var parent: NativeConverterColorPicker
+
+        init(parent: NativeConverterColorPicker) { self.parent = parent }
+
+        func colorPickerViewController(_ viewController: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
+            var r: CGFloat = 0
+            var g: CGFloat = 0
+            var b: CGFloat = 0
+            var a: CGFloat = 0
+            guard color.getRed(&r, green: &g, blue: &b, alpha: &a) else { return }
+            parent.color = RGBColor(
+                r: RGBColor.clampChannel(Int((r * 255).rounded())),
+                g: RGBColor.clampChannel(Int((g * 255).rounded())),
+                b: RGBColor.clampChannel(Int((b * 255).rounded()))
+            )
         }
     }
 }
@@ -239,24 +339,6 @@ private struct BorderedField: View {
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Color(.separator), lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Color <-> RGBColor bridging
-
-private extension Color {
-    func rgbColor() -> RGBColor {
-        let uiColor = UIColor(self)
-        var r: CGFloat = 0
-        var g: CGFloat = 0
-        var b: CGFloat = 0
-        var a: CGFloat = 0
-        uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
-        return RGBColor(
-            r: RGBColor.clampChannel(Int((r * 255).rounded())),
-            g: RGBColor.clampChannel(Int((g * 255).rounded())),
-            b: RGBColor.clampChannel(Int((b * 255).rounded()))
         )
     }
 }
