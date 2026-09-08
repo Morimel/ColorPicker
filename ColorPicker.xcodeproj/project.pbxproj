@@ -56,6 +56,11 @@
 			path = Config;
 			sourceTree = "<group>";
 		};
+		FB15ECBB30505D1800363697 /* PaletteModels */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PaletteModels;
+			sourceTree = "<group>";
+		};
 		FBC39B7530481D1B0051F12D /* ColorPicker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ColorPicker;
@@ -85,6 +90,7 @@
 		FBC39B6A30481D1B0051F12D = {
 			isa = PBXGroup;
 			children = (
+				FB15ECBB30505D1800363697 /* PaletteModels */,
 				FBC39B7530481D1B0051F12D /* ColorPicker */,
 				B22000000000000000000003 /* SharedColors */,
 				B22000000000000000000004 /* ColorPickerWidgets */,
@@ -120,6 +126,7 @@
 			fileSystemSynchronizedGroups = (
 				B22000000000000000000003 /* SharedColors */,
 				B22000000000000000000004 /* ColorPickerWidgets */,
+				FB15ECBB30505D1800363697 /* PaletteModels */,
 			);
 			name = ColorPickerWidgets;
 			packageProductDependencies = (
@@ -144,6 +151,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				B22000000000000000000003 /* SharedColors */,
+				FB15ECBB30505D1800363697 /* PaletteModels */,
 				FBC39B7530481D1B0051F12D /* ColorPicker */,
 			);
 			name = ColorPicker;

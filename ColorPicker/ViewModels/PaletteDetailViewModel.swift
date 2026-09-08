@@ -27,4 +27,11 @@ final class PaletteDetailViewModel {
     func markCopied() {
         showsCopiedToast = true
     }
+
+    /// Renders the current palette to a temp PDF file, or `nil` if it has no colors yet.
+    func exportPDF() -> URL? {
+        let palette = currentPalette
+        let entries = palette.colors.map(PDFColorExport.Entry.init)
+        return PDFColorExport.makePDF(documentTitle: palette.name, sections: [.init(title: "", entries: entries)])
+    }
 }

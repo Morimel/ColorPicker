@@ -21,6 +21,12 @@ struct ConverterView: View {
         Group {
             if let viewModel {
                 ConverterContent(viewModel: viewModel)
+            } else {
+                // Never let this render as a truly empty view: inside a
+                // NavigationStack, a view whose first frame has zero content
+                // doesn't get `.task`/`.onAppear` delivered, so `viewModel`
+                // would stay nil forever and the screen would stay blank.
+                Color.clear
             }
         }
         .task {

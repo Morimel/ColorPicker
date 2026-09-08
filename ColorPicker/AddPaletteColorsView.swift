@@ -14,6 +14,12 @@ struct AddPaletteColorsView: View {
         Group {
             if let viewModel {
                 AddPaletteColorsContent(viewModel: viewModel)
+            } else {
+                // Never let this render as a truly empty view: inside a
+                // NavigationStack, a view whose first frame has zero content
+                // doesn't get `.task`/`.onAppear` delivered, so `viewModel`
+                // would stay nil forever and the screen would stay blank.
+                Color.clear
             }
         }
         .task {
@@ -27,6 +33,7 @@ struct AddPaletteColorsView: View {
 private struct AddPaletteColorsContent: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var viewModel: AddPaletteColorsViewModel
+    @State private var showsCatalogBrowser = false
 
     var body: some View {
         NavigationStack {
@@ -41,6 +48,12 @@ private struct AddPaletteColorsContent: View {
                         Text("Введите HEX из 6 символов: 0–9, A–F.")
                             .font(.caption)
                             .foregroundStyle(.red)
+                    }
+
+                    Button {
+                        showsCatalogBrowser = true
+                    } label: {
+                        Label("Обзор каталога цветов", systemImage: "square.grid.3x3.fill")
                     }
                 }
 
@@ -76,6 +89,11 @@ private struct AddPaletteColorsContent: View {
                         dismiss()
                     }
                     .disabled(viewModel.colorsToAdd.isEmpty || (viewModel.hasHexInput && viewModel.customRGB == nil))
+                }
+            }
+            .sheet(isPresented: $showsCatalogBrowser) {
+                ColorCatalogBrowserView { rgb in
+                    viewModel.addCatalogColorToPalette(rgb)
                 }
             }
         }

@@ -21,6 +21,12 @@ struct SavedColorsView: View {
         Group {
             if let viewModel {
                 SavedColorsContent(viewModel: viewModel)
+            } else {
+                // Never let this render as a truly empty view: inside a
+                // NavigationStack, a view whose first frame has zero content
+                // doesn't get `.task`/`.onAppear` delivered, so `viewModel`
+                // would stay nil forever and the screen would stay blank.
+                Color.clear
             }
         }
         .task {
@@ -41,6 +47,9 @@ private struct SavedColorsContent: View {
     @Namespace private var tabHighlight
 
     @Bindable var viewModel: SavedColorsViewModel
+
+    @State private var pdfToShare: URL?
+    @State private var showsPDFShareSheet = false
 
     private var isRegularWidth: Bool { horizontalSizeClass == .regular }
 
@@ -86,6 +95,11 @@ private struct SavedColorsContent: View {
         .animation(reduceMotion ? nil : AppMotion.spring, value: viewModel.isSelecting)
         .background(Color(.systemBackground))
         .savedToast(isPresented: $viewModel.showsCopiedToast, text: "Скопировано")
+        .sheet(isPresented: $showsPDFShareSheet) {
+            if let pdfToShare {
+                ShareSheet(activityItems: [pdfToShare])
+            }
+        }
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -106,7 +120,16 @@ private struct SavedColorsContent: View {
             }
             if viewModel.isSelecting {
                 ToolbarItem(placement: .topBarTrailing) {
-                    ShareLink(item: viewModel.selectionShareText) {
+                    Menu {
+                        ShareLink(item: viewModel.selectionShareText) {
+                            Label("Поделиться текстом", systemImage: "text.alignleft")
+                        }
+                        Button {
+                            exportSelectionPDF()
+                        } label: {
+                            Label("Экспортировать в PDF", systemImage: "doc.richtext")
+                        }
+                    } label: {
                         Label("Поделиться", systemImage: "square.and.arrow.up")
                     }
                     .disabled(!viewModel.hasSelection())
@@ -220,13 +243,6 @@ private struct SavedColorsContent: View {
                         }
                         ColorInfoCard(rgb: entry.rgb, ral: entry.ral,
                                       onCopied: viewModel.isSelecting ? nil : { viewModel.markCopied() })
-                        if !viewModel.isSelecting {
-                            ShareLink(item: entry.shareText) {
-                                Label("Поделиться цветом", systemImage: "square.and.arrow.up")
-                                    .labelStyle(.iconOnly)
-                            }
-                            .buttonStyle(.borderless)
-                        }
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -301,6 +317,12 @@ private struct SavedColorsContent: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
         }
+    }
+
+    private func exportSelectionPDF() {
+        guard let url = viewModel.exportSelectionPDF() else { return }
+        pdfToShare = url
+        showsPDFShareSheet = true
     }
 
     private func selectionIndicator(isSelected: Bool) -> some View {

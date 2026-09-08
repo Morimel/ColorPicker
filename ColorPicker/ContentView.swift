@@ -11,29 +11,43 @@ struct ContentView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel = RootViewModel()
+    @State private var showsSplash = true
 
     var body: some View {
-        HomeView(incomingURL: $viewModel.incomingURL)
-            .environment(viewModel.savedColorsStore)
-            .environment(viewModel.paletteStore)
-            .overlay {
-                if viewModel.isOnboardingVisible {
-                    OnboardingView(isOnboardingVisible: $viewModel.isOnboardingVisible)
-                        .transition(.opacity)
+        ZStack {
+            HomeView(incomingURL: $viewModel.incomingURL)
+                .environment(viewModel.savedColorsStore)
+                .environment(viewModel.paletteStore)
+                .overlay {
+                    if viewModel.isOnboardingVisible {
+                        OnboardingView(isOnboardingVisible: $viewModel.isOnboardingVisible)
+                            .transition(.opacity)
+                    }
                 }
+                .onOpenURL { url in
+                    viewModel.handleOpenURL(url)
+                }
+                .alert("Сохранённые цвета", isPresented: Binding(
+                    get: { viewModel.persistenceError != nil },
+                    set: { if !$0 { viewModel.persistenceError = nil } }
+                )) {
+                    Button("OK") { viewModel.persistenceError = nil }
+                } message: {
+                    Text(viewModel.persistenceError ?? "")
+                }
+                .animation(reduceMotion ? nil : .easeInOut, value: viewModel.isOnboardingVisible)
+
+            if showsSplash {
+                SplashView()
+                    .transition(.opacity)
             }
-            .onOpenURL { url in
-                viewModel.handleOpenURL(url)
+        }
+        .task {
+            try? await Task.sleep(for: .seconds(1.1))
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) {
+                showsSplash = false
             }
-            .alert("Сохранённые цвета", isPresented: Binding(
-                get: { viewModel.persistenceError != nil },
-                set: { if !$0 { viewModel.persistenceError = nil } }
-            )) {
-                Button("OK") { viewModel.persistenceError = nil }
-            } message: {
-                Text(viewModel.persistenceError ?? "")
-            }
-            .animation(reduceMotion ? nil : .easeInOut, value: viewModel.isOnboardingVisible)
+        }
     }
 }
 

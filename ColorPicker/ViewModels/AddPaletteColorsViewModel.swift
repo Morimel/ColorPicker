@@ -48,4 +48,12 @@ final class AddPaletteColorsViewModel {
     func confirm() {
         paletteStore.add(colors: colorsToAdd, to: paletteID)
     }
+
+    /// Adds a color picked from `ColorCatalogBrowserView` straight to the active palette,
+    /// bypassing the hex-entry/saved-colors selection above — the browser is opened from
+    /// the palette-adding flow, not a standalone color editor, so there's nothing to stage.
+    func addCatalogColorToPalette(_ rgb: RGBColor) {
+        let color = SavedColor(rgb: rgb, ral: RALPalette.nearestRALColor(to: rgb), note: "", createdAt: Date())
+        paletteStore.add(colors: [color], to: paletteID)
+    }
 }

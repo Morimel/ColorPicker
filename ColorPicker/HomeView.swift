@@ -11,6 +11,7 @@ import SwiftUI
 
 struct HomeView: View {
     @State private var viewModel = HomeViewModel()
+    @State private var gridWidth: CGFloat = 0
     @Binding var incomingURL: URL?
 
     init(incomingURL: Binding<URL?> = .constant(nil)) {
@@ -69,16 +70,26 @@ struct HomeView: View {
         .padding(.top, 8)
     }
 
+    private static let gridSpacing: CGFloat = 20
+    private static let cardAspectRatio: CGFloat = 0.88 // width / height
+
+    private var cardHeight: CGFloat {
+        let columnWidth = (gridWidth - Self.gridSpacing) / 2
+        guard columnWidth > 0 else { return 150 }
+        return columnWidth / Self.cardAspectRatio
+    }
+
     private var optionsGrid: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 16) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: Self.gridSpacing), GridItem(.flexible())], spacing: Self.gridSpacing) {
             ForEach(Array(HomeOption.gridOptions.enumerated()), id: \.element.id) { index, option in
                 NavigationLink(value: option.destination) {
-                    HomeOptionButton(option: option)
+                    HomeOptionButton(option: option, height: cardHeight)
                 }
                 .buttonStyle(SoftPressButtonStyle())
                 .softEntrance(delay: 0.05 * Double(index + 1))
             }
         }
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }, action: { gridWidth = $0 })
     }
 
     private var savedButton: some View {
@@ -103,22 +114,27 @@ struct HomeView: View {
 
 private struct HomeOptionButton: View {
     let option: HomeOption
+    let height: CGFloat
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             if let artwork = option.artwork {
                 LottieArtwork(asset: artwork)
-                    .frame(width: 72, height: 72)
+                    .frame(width: 64, height: 64)
             }
             Text(option.title)
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, 6)
         }
         .frame(maxWidth: .infinity)
-        .aspectRatio(1.3, contentMode: .fit)
+        .frame(height: height)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .fill(option.color)
         )
     }
@@ -190,6 +206,12 @@ struct PalettesView: View {
         Group {
             if let viewModel {
                 PalettesContent(viewModel: viewModel)
+            } else {
+                // Never let this render as a truly empty view: inside a
+                // NavigationStack, a view whose first frame has zero content
+                // doesn't get `.task`/`.onAppear` delivered, so `viewModel`
+                // would stay nil forever and the screen would stay blank.
+                Color.clear
             }
         }
         .task {
@@ -203,6 +225,9 @@ struct PalettesView: View {
 private struct PalettesContent: View {
     let viewModel: PalettesViewModel
 
+    @State private var pendingNewPalette: Palette?
+    @State private var showsNewPalette = false
+
     var body: some View {
         Group {
             if viewModel.palettes.isEmpty {
@@ -213,6 +238,23 @@ private struct PalettesContent: View {
         }
         .navigationTitle("Палитры")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: createPalette) {
+                    Label("Новая палитра", systemImage: "plus")
+                }
+            }
+        }
+        .navigationDestination(isPresented: $showsNewPalette) {
+            if let pendingNewPalette {
+                PaletteDetailView(palette: pendingNewPalette)
+            }
+        }
+    }
+
+    private func createPalette() {
+        pendingNewPalette = viewModel.createPalette()
+        showsNewPalette = true
     }
 
     private var emptyState: some View {
@@ -222,23 +264,35 @@ private struct PalettesContent: View {
             Text("Пока нет сохранённых палитр")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+            Button(action: createPalette) {
+                Label("Новая палитра", systemImage: "plus")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color.tealAccent)
+            .padding(.top, 8)
         }
     }
 
     private var list: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(viewModel.palettes) { palette in
-                    NavigationLink {
-                        PaletteDetailView(palette: palette)
-                    } label: {
-                        PaletteRow(palette: palette)
-                    }
-                    .buttonStyle(SoftPressButtonStyle())
+        List {
+            ForEach(viewModel.palettes) { palette in
+                NavigationLink {
+                    PaletteDetailView(palette: palette)
+                } label: {
+                    PaletteRow(palette: palette)
                 }
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             }
-            .padding(16)
+            .onDelete { offsets in
+                viewModel.delete(at: offsets)
+            }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
 }
 
@@ -260,10 +314,6 @@ private struct PaletteRow: View {
             }
 
             Spacer(minLength: 0)
-
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
         }
         .padding(12)
         .background(

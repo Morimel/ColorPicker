@@ -120,4 +120,21 @@ final class SavedColorsViewModel {
         selectedColorIDs.removeAll()
         selectedPaletteIDs.removeAll()
     }
+
+    // MARK: PDF export
+
+    /// Renders the current selection to a temp PDF file, or `nil` if nothing is selected.
+    /// Colors become a single flat sheet; palettes become one titled section each.
+    func exportSelectionPDF() -> URL? {
+        switch selectedTab {
+        case .colors:
+            let entries = colors.filter { selectedColorIDs.contains($0.id) }.map(PDFColorExport.Entry.init)
+            return PDFColorExport.makePDF(documentTitle: "Сохранённые цвета", sections: [.init(title: "", entries: entries)])
+        case .palettes:
+            let sections = palettes
+                .filter { selectedPaletteIDs.contains($0.id) }
+                .map { PDFColorExport.Section(title: $0.name, entries: $0.colors.map(PDFColorExport.Entry.init)) }
+            return PDFColorExport.makePDF(documentTitle: "Палитры", sections: sections)
+        }
+    }
 }

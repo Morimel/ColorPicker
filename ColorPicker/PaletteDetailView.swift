@@ -23,6 +23,12 @@ struct PaletteDetailView: View {
         Group {
             if let viewModel {
                 PaletteDetailContent(viewModel: viewModel)
+            } else {
+                // Never let this render as a truly empty view: inside a
+                // NavigationStack, a view whose first frame has zero content
+                // doesn't get `.task`/`.onAppear` delivered, so `viewModel`
+                // would stay nil forever and the screen would stay blank.
+                Color.clear
             }
         }
         .task {
@@ -37,6 +43,9 @@ struct PaletteDetailView: View {
 
 private struct PaletteDetailContent: View {
     @Bindable var viewModel: PaletteDetailViewModel
+
+    @State private var pdfToShare: URL?
+    @State private var showsPDFShareSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -61,9 +70,24 @@ private struct PaletteDetailContent: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: viewModel.currentPalette.shareText) {
+                Menu {
+                    ShareLink(item: viewModel.currentPalette.shareText) {
+                        Label("Поделиться текстом", systemImage: "text.alignleft")
+                    }
+                    Button {
+                        exportPDF()
+                    } label: {
+                        Label("Экспортировать в PDF", systemImage: "doc.richtext")
+                    }
+                    .disabled(viewModel.currentPalette.colors.isEmpty)
+                } label: {
                     Label("Поделиться палитрой", systemImage: "square.and.arrow.up")
                 }
+            }
+        }
+        .sheet(isPresented: $showsPDFShareSheet) {
+            if let pdfToShare {
+                ShareSheet(activityItems: [pdfToShare])
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -88,6 +112,12 @@ private struct PaletteDetailContent: View {
 
     private var colorStrip: some View {
         ColorStripView(colors: viewModel.entries.map(\.rgb))
+    }
+
+    private func exportPDF() {
+        guard let url = viewModel.exportPDF() else { return }
+        pdfToShare = url
+        showsPDFShareSheet = true
     }
 }
 
