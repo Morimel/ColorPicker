@@ -14,6 +14,8 @@ import UIKit
 /// Saved/Palettes screens.
 struct ColorInfoCard: View {
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let swatch: Color
     let ralName: String
     let ralCode: String
@@ -30,6 +32,7 @@ struct ColorInfoCard: View {
         HStack(spacing: 14) {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(swatch)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: hex)
                 .frame(width: 56, height: 56)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -71,8 +74,10 @@ struct ColorInfoCard: View {
                 Button(action: trailingAction) {
                     Image(systemName: trailingIcon)
                         .font(.system(size: 26))
+                        .contentTransition(.symbolEffect(.replace))
                         .foregroundStyle(Color.tealAccent)
                 }
+                .buttonStyle(SoftPressButtonStyle())
             }
         }
         .padding(12)
@@ -98,7 +103,7 @@ extension ColorInfoCard {
     init(rgb: RGBColor, ral: RALColor, showsBorder: Bool = false, trailingAction: (() -> Void)? = nil, trailingIcon: String = "plus.circle.fill", onCopied: (() -> Void)? = nil) {
         self.init(
             swatch: Color(hex: rgb.hexString),
-            ralName: ral.nameRu,
+            ralName: ral.localizedName,
             ralCode: ral.code,
             hex: rgb.hexString,
             cmyk: rgb.cmykString,

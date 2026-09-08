@@ -8,36 +8,38 @@
 import SwiftUI
 import UIKit
 
-// MARK: - ConverterField
-
-fileprivate enum ConverterField: Hashable {
-    case hex, r, g, b, c, m, y, k
-}
-
 // MARK: - ConverterView
 
+/// Thin wrapper: `@Environment` values aren't available until the view is in
+/// the hierarchy, so the view model — which owns the store outright rather
+/// than receiving it per call — is created once here and handed down.
 struct ConverterView: View {
-
-    @Environment(\.dismiss) private var dismiss
     @Environment(SavedColorsStore.self) private var savedColorsStore
+    @State private var viewModel: ConverterViewModel?
 
-    @State private var currentColor = RGBColor(r: 0, g: 0, b: 0)
-    @State private var hasEnteredColor = false
-    @State private var showSavedToast = false
-    @State private var showsColorPicker = false
+    var body: some View {
+        Group {
+            if let viewModel {
+                ConverterContent(viewModel: viewModel)
+            }
+        }
+        .task {
+            if viewModel == nil {
+                viewModel = ConverterViewModel(store: savedColorsStore)
+            }
+        }
+    }
+}
 
-    @State private var hexText = "#000000"
-    @State private var rText = "0"
-    @State private var gText = "0"
-    @State private var bText = "0"
-    @State private var cText = "0"
-    @State private var mText = "0"
-    @State private var yText = "0"
-    @State private var kText = "0"
+// MARK: - ConverterContent
 
+private struct ConverterContent: View {
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dismiss) private var dismiss
+
+    @Bindable var viewModel: ConverterViewModel
     @FocusState private var focusedField: ConverterField?
-
-    private var nearestRAL: RALColor { RALPalette.nearestRALColor(to: currentColor) }
 
     var body: some View {
         VStack(spacing: 20) {
@@ -49,7 +51,7 @@ struct ConverterView: View {
 
             colorPickerRow
 
-            ColorInfoCard(rgb: currentColor, ral: nearestRAL, showsBorder: true)
+            ColorInfoCard(rgb: viewModel.currentColor, ral: viewModel.nearestRAL, showsBorder: true)
 
             Spacer(minLength: 12)
 
@@ -72,24 +74,20 @@ struct ConverterView: View {
             }
         }
         .onChange(of: focusedField) { oldValue, _ in
-            commit(field: oldValue)
+            viewModel.commit(field: oldValue)
         }
-        .savedToast(isPresented: $showSavedToast, text: "Сохранено")
-        .sheet(isPresented: $showsColorPicker) {
+        .savedToast(isPresented: $viewModel.showSavedToast, text: "Сохранено")
+        .sheet(isPresented: $viewModel.showsColorPicker) {
             NavigationStack {
                 ConverterColorPicker(color: Binding(
-                    get: { currentColor },
-                    set: {
-                        currentColor = $0
-                        hasEnteredColor = true
-                        syncFields(skipping: nil)
-                    }
+                    get: { viewModel.currentColor },
+                    set: { viewModel.applyPickedColor($0) }
                 ))
                 .navigationTitle("Выбрать цвет")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Готово") { showsColorPicker = false }
+                        Button("Готово") { viewModel.showsColorPicker = false }
                     }
                 }
             }
@@ -99,34 +97,34 @@ struct ConverterView: View {
     // MARK: Fields
 
     private var hexField: some View {
-        BorderedField(label: "Hex", text: $hexText, focus: $focusedField, field: .hex)
+        BorderedField(label: "Hex", text: $viewModel.hexText, focus: $focusedField, field: .hex)
             .textInputAutocapitalization(.characters)
             .autocorrectionDisabled()
-            .onChange(of: hexText) { _, newValue in
-                hexText = newValue.uppercased()
+            .onChange(of: viewModel.hexText) { _, newValue in
+                viewModel.hexText = newValue.uppercased()
             }
     }
 
     private var rgbRow: some View {
         HStack(spacing: 12) {
-            BorderedField(label: "R", text: $rText, focus: $focusedField, field: .r)
+            BorderedField(label: "R", text: $viewModel.rText, focus: $focusedField, field: .r)
                 .keyboardType(.numberPad)
-            BorderedField(label: "G", text: $gText, focus: $focusedField, field: .g)
+            BorderedField(label: "G", text: $viewModel.gText, focus: $focusedField, field: .g)
                 .keyboardType(.numberPad)
-            BorderedField(label: "B", text: $bText, focus: $focusedField, field: .b)
+            BorderedField(label: "B", text: $viewModel.bText, focus: $focusedField, field: .b)
                 .keyboardType(.numberPad)
         }
     }
 
     private var cmykRow: some View {
         HStack(spacing: 12) {
-            BorderedField(label: "C", text: $cText, focus: $focusedField, field: .c)
+            BorderedField(label: "C", text: $viewModel.cText, focus: $focusedField, field: .c)
                 .keyboardType(.numberPad)
-            BorderedField(label: "M", text: $mText, focus: $focusedField, field: .m)
+            BorderedField(label: "M", text: $viewModel.mText, focus: $focusedField, field: .m)
                 .keyboardType(.numberPad)
-            BorderedField(label: "Y", text: $yText, focus: $focusedField, field: .y)
+            BorderedField(label: "Y", text: $viewModel.yText, focus: $focusedField, field: .y)
                 .keyboardType(.numberPad)
-            BorderedField(label: "K", text: $kText, focus: $focusedField, field: .k)
+            BorderedField(label: "K", text: $viewModel.kText, focus: $focusedField, field: .k)
                 .keyboardType(.numberPad)
         }
     }
@@ -135,12 +133,12 @@ struct ConverterView: View {
         HStack(spacing: 12) {
             Text("Выбрать цвет:")
             Button {
-                commit(field: focusedField)
+                viewModel.commit(field: focusedField)
                 focusedField = nil
-                showsColorPicker = true
+                viewModel.showsColorPicker = true
             } label: {
                 Circle()
-                    .fill(Color(hex: currentColor.hexString))
+                    .fill(Color(hex: viewModel.currentColor.hexString))
                     .frame(width: 28, height: 28)
                     .padding(4)
                     .overlay {
@@ -152,13 +150,13 @@ struct ConverterView: View {
                     .frame(width: 44, height: 44)
             }
             .accessibilityLabel("Выбрать цвет")
-            .accessibilityValue(currentColor.hexString)
+            .accessibilityValue(viewModel.currentColor.hexString)
             Spacer(minLength: 0)
         }
     }
 
     private var saveButton: some View {
-        Button(action: save) {
+        Button(action: { viewModel.save(onSaved: { dismiss() }) }) {
             Text("Сохранить")
                 .font(.headline)
                 .fontWeight(.bold)
@@ -167,81 +165,12 @@ struct ConverterView: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(hasEnteredColor ? Color.tealAccent : Color(.systemGray4))
+                        .fill(viewModel.hasEnteredColor ? Color.tealAccent : Color(.systemGray4))
                 )
         }
-        .disabled(!hasEnteredColor)
-    }
-
-    // MARK: Sync logic
-
-    private func commit(field: ConverterField?) {
-        guard let field else { return }
-        switch field {
-        case .hex:
-            commitHex()
-        case .r, .g, .b:
-            commitRGB()
-        case .c, .m, .y, .k:
-            commitCMYK()
-        }
-    }
-
-    private func commitHex() {
-        guard let parsed = RGBColor(hex: hexText) else {
-            syncFields(skipping: .hex)
-            return
-        }
-        currentColor = parsed
-        hasEnteredColor = true
-        syncFields(skipping: .hex)
-    }
-
-    private func commitRGB() {
-        let r = RGBColor.clampChannel(Int(rText) ?? currentColor.r)
-        let g = RGBColor.clampChannel(Int(gText) ?? currentColor.g)
-        let b = RGBColor.clampChannel(Int(bText) ?? currentColor.b)
-        currentColor = RGBColor(r: r, g: g, b: b)
-        hasEnteredColor = true
-        syncFields(skipping: nil)
-    }
-
-    private func commitCMYK() {
-        let existing = currentColor.cmyk
-        let c = RGBColor.clampPercent(Int(cText) ?? existing.c)
-        let m = RGBColor.clampPercent(Int(mText) ?? existing.m)
-        let y = RGBColor.clampPercent(Int(yText) ?? existing.y)
-        let k = RGBColor.clampPercent(Int(kText) ?? existing.k)
-        currentColor = RGBColor(c: c, m: m, y: y, k: k)
-        hasEnteredColor = true
-        syncFields(skipping: nil)
-    }
-
-    /// Refreshes every field from `currentColor`, except the field the user
-    /// is still actively editing (so we don't stomp on the exact text they
-    /// typed until they move on).
-    private func syncFields(skipping field: ConverterField?) {
-        if field != .hex { hexText = currentColor.hexString }
-        if field != .r { rText = "\(currentColor.r)" }
-        if field != .g { gText = "\(currentColor.g)" }
-        if field != .b { bText = "\(currentColor.b)" }
-
-        let cmyk = currentColor.cmyk
-        if field != .c { cText = "\(cmyk.c)" }
-        if field != .m { mText = "\(cmyk.m)" }
-        if field != .y { yText = "\(cmyk.y)" }
-        if field != .k { kText = "\(cmyk.k)" }
-    }
-
-    // MARK: Save
-
-    private func save() {
-        savedColorsStore.add(rgb: currentColor, note: "")
-        showSavedToast = true
-        Task {
-            try? await Task.sleep(nanoseconds: 700_000_000)
-            dismiss()
-        }
+        .buttonStyle(SoftPressButtonStyle())
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.hasEnteredColor)
+        .disabled(!viewModel.hasEnteredColor)
     }
 }
 

@@ -1,74 +1,84 @@
-//
-//  SavedColorsStore.swift
-//  ColorPicker
-//
-//  Created by Isa Melsov on 2/9/26.
-//
-
 import Foundation
 import SwiftUI
-
-// MARK: - SavedColor
-
-struct SavedColor: Identifiable, Codable, Equatable {
-    var id: UUID = UUID()
-    var rgb: RGBColor
-    var ral: RALColor
-    var note: String
-    var createdAt: Date
-
-    var shareText: String {
-        var text = "\(ral.code) — \(ral.nameRu)\nHEX: \(rgb.hexString)\nRGB: \(rgb.rgbString)\nCMYK: \(rgb.cmykString)"
-        if !note.isEmpty { text += "\n\(note)" }
-        return text
-    }
-}
-
-// MARK: - SavedColorsStore
+import WidgetKit
 
 @Observable
 final class SavedColorsStore {
-
     private(set) var savedColors: [SavedColor] = []
-
+    var persistenceError: String?
     private let fileURL: URL
+    private let refreshWidgets: Bool
+    private var canWrite = true
 
     init(fileURL: URL? = nil) {
-        self.fileURL = fileURL ?? Self.defaultFileURL()
-        load()
+        let legacyURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("savedColors.json")
+        let sharedURL = fileURL == nil ? SharedColorStorage.fileURL : nil
+        self.fileURL = fileURL ?? sharedURL ?? legacyURL
+        refreshWidgets = fileURL == nil && sharedURL != nil
+        do {
+            if let sharedURL {
+                try SharedColorStorage.migrateIfNeeded(from: legacyURL, to: sharedURL)
+            }
+            savedColors = try SharedColorStorage.read(from: self.fileURL)
+            if refreshWidgets { reloadWidgets() }
+            if fileURL == nil && sharedURL == nil {
+                persistenceError = String(localized: "Цвета сохраняются на устройстве, но общий доступ для виджетов недоступен.")
+            }
+        } catch {
+            // Keep corrupt or inaccessible data intact; do not overwrite it with an empty list.
+            canWrite = false
+            persistenceError = String(localized: "Не удалось прочитать сохранённые цвета. Попробуйте открыть приложение снова.")
+        }
     }
 
-    func add(rgb: RGBColor, note: String = "") {
-        let ral = RALPalette.nearestRALColor(to: rgb)
-        let entry = SavedColor(rgb: rgb, ral: ral, note: note, createdAt: Date())
-        savedColors.insert(entry, at: 0)
-        save()
+    @discardableResult
+    func add(rgb: RGBColor, note: String = "") -> Bool {
+        let entry = SavedColor(rgb: rgb, ral: RALPalette.nearestRALColor(to: rgb), note: note, createdAt: Date())
+        return commit([entry] + savedColors)
+    }
+
+    @discardableResult
+    func add(_ entries: [SavedColor]) -> Bool {
+        commit(entries.reversed() + savedColors)
     }
 
     func remove(_ entry: SavedColor) {
-        savedColors.removeAll { $0.id == entry.id }
-        save()
+        commit(savedColors.filter { $0.id != entry.id })
     }
 
     func remove(at offsets: IndexSet) {
-        savedColors.remove(atOffsets: offsets)
-        save()
+        var updated = savedColors
+        updated.remove(atOffsets: offsets)
+        commit(updated)
     }
 
-    // MARK: Persistence
-
-    private func load() {
-        guard let data = try? Data(contentsOf: fileURL) else { return }
-        savedColors = (try? JSONDecoder().decode([SavedColor].self, from: data)) ?? []
+    func toggleFavorite(id: UUID) {
+        var updated = savedColors
+        guard let index = updated.firstIndex(where: { $0.id == id }) else { return }
+        updated[index].isFavorite.toggle()
+        commit(updated)
     }
 
-    private func save() {
-        guard let data = try? JSONEncoder().encode(savedColors) else { return }
-        try? data.write(to: fileURL, options: .atomic)
+    @discardableResult
+    private func commit(_ colors: [SavedColor]) -> Bool {
+        guard canWrite else {
+            persistenceError = String(localized: "Сохранённые цвета недоступны. Откройте приложение снова перед изменением.")
+            return false
+        }
+        do {
+            try SharedColorStorage.write(colors, to: fileURL)
+            savedColors = colors
+            if refreshWidgets { reloadWidgets() }
+            return true
+        } catch {
+            persistenceError = String(localized: "Не удалось сохранить изменения. Попробуйте ещё раз.")
+            return false
+        }
     }
 
-    private static func defaultFileURL() -> URL {
-        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return documents.appendingPathComponent("savedColors.json")
+    private func reloadWidgets() {
+        WidgetCenter.shared.reloadTimelines(ofKind: SharedColorStorage.recentWidgetKind)
+        WidgetCenter.shared.reloadTimelines(ofKind: SharedColorStorage.lastWidgetKind)
     }
 }

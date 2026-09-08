@@ -1,0 +1,96 @@
+{
+  "sourceLanguage": "ru",
+  "strings": {
+    "Избранные и последние сохранённые цвета — всегда под рукой.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your favorite and most recent saved colors, always at hand."
+          }
+        }
+      }
+    },
+    "Избранный или последний сохранённый цвет на экране блокировки.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your favorite or most recently saved color, right on the Lock Screen."
+          }
+        }
+      }
+    },
+    "Избранный цвет %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorite color %@"
+          }
+        }
+      }
+    },
+    "Откройте приложение": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the app"
+          }
+        }
+      }
+    },
+    "Последний цвет": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last Color"
+          }
+        }
+      }
+    },
+    "Сохраните первый цвет": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save your first color"
+          }
+        }
+      }
+    },
+    "Сохраните цвет": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save a color"
+          }
+        }
+      }
+    },
+    "Сохранённые цвета": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved Colors"
+          }
+        }
+      }
+    },
+    "Цвет %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color %@"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

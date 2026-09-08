@@ -21,11 +21,12 @@ enum OnboardingPage: String, Identifiable, CaseIterable {
 
 struct OnboardingView: View {
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var isOnboardingVisible: Bool
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
 
-    @State private var currentPage: OnboardingPage = .colorScan
+    @State private var viewModel = OnboardingViewModel()
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -53,7 +54,7 @@ struct OnboardingView: View {
             .background(Color(.systemBackground))
             .onAppear {
                 // Make sure we always start from the first page.
-                proxy.scrollTo(currentPage.id, anchor: .leading)
+                proxy.scrollTo(viewModel.currentPage.id, anchor: .leading)
             }
         }
     }
@@ -62,11 +63,11 @@ struct OnboardingView: View {
     private func pageContent(for page: OnboardingPage) -> some View {
         switch page {
         case .colorScan:
-            ColorScanPage()
+            ColorScanPage(isActive: viewModel.currentPage == .colorScan)
         case .inspireCreate:
-            InspireCreatePage()
+            InspireCreatePage(isActive: viewModel.currentPage == .inspireCreate)
         case .quickFind:
-            QuickFindPage()
+            QuickFindPage(isActive: viewModel.currentPage == .quickFind)
         }
     }
 
@@ -74,11 +75,11 @@ struct OnboardingView: View {
         HStack(spacing: 8) {
             ForEach(OnboardingPage.allCases) { page in
                 Circle()
-                    .fill(page == currentPage ? Color.tealAccent : Color(.systemGray4))
+                    .fill(page == viewModel.currentPage ? Color.tealAccent : Color(.systemGray4))
                     .frame(width: 8, height: 8)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: currentPage)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.currentPage)
     }
 
     private func continueButton(proxy: ScrollViewProxy) -> some View {
@@ -94,23 +95,20 @@ struct OnboardingView: View {
                         .fill(Color.tealAccent)
                 )
         }
+        .buttonStyle(SoftPressButtonStyle())
         .padding(.horizontal, 24)
     }
 
     private func handleContinue(proxy: ScrollViewProxy) {
-        guard let currentIndex = OnboardingPage.allCases.firstIndex(of: currentPage) else { return }
-        let nextIndex = OnboardingPage.allCases.index(after: currentIndex)
-
-        if nextIndex < OnboardingPage.allCases.endIndex {
-            let nextPage = OnboardingPage.allCases[nextIndex]
-            withAnimation {
+        if let nextPage = viewModel.nextPage() {
+            withAnimation(reduceMotion ? nil : AppMotion.spring) {
                 proxy.scrollTo(nextPage.id, anchor: .leading)
-                currentPage = nextPage
+                viewModel.currentPage = nextPage
             }
         } else {
             // Last page: finish onboarding instead of scrolling further.
             hasCompletedOnboarding = true
-            withAnimation {
+            withAnimation(reduceMotion ? nil : AppMotion.spring) {
                 isOnboardingVisible = false
             }
         }
@@ -120,8 +118,8 @@ struct OnboardingView: View {
 // MARK: - Shared page pieces
 
 private struct OnboardingHeader: View {
-    let headline: String
-    let subtext: String
+    let headline: LocalizedStringKey
+    let subtext: LocalizedStringKey
 
     var body: some View {
         VStack(spacing: 8) {
@@ -141,16 +139,17 @@ private struct OnboardingHeader: View {
     }
 }
 
-/// Displays one of the `Images.onboarding*` mockups, framed to match its 343×409 source aspect ratio.
+/// Displays one of the Lottie illustrations, large — filling the same slot
+/// the static onboarding mockups used to occupy, instead of playing as a
+/// small corner badge on top of them.
 private struct OnboardingVisual: View {
-    let imageName: String
+    let animation: LottieArtwork.Asset
+    let isActive: Bool
 
     var body: some View {
-        Image(imageName)
-            .resizable()
+        LottieArtwork(asset: animation, isActive: isActive)
             .aspectRatio(343.0 / 409.0, contentMode: .fit)
             .frame(maxWidth: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .padding(.horizontal, 24)
     }
 }
@@ -158,6 +157,7 @@ private struct OnboardingVisual: View {
 // MARK: - Screen 1: Color Scan
 
 struct ColorScanPage: View {
+    var isActive = true
     var body: some View {
         VStack(spacing: 0) {
             OnboardingHeader(
@@ -165,7 +165,7 @@ struct ColorScanPage: View {
                 subtext: "Наведите камеру — получите точный код цвета за секунду!"
             )
 
-            OnboardingVisual(imageName: Images.onboardingFirstPage)
+            OnboardingVisual(animation: .scan, isActive: isActive)
 
             Spacer(minLength: 0)
         }
@@ -175,6 +175,7 @@ struct ColorScanPage: View {
 // MARK: - Screen 2: Inspire & Create
 
 struct InspireCreatePage: View {
+    var isActive = true
     var body: some View {
         VStack(spacing: 0) {
             OnboardingHeader(
@@ -182,7 +183,7 @@ struct InspireCreatePage: View {
                 subtext: "Подбирайте идеальные цветовые решения для ваших творческих проектов в один клик"
             )
 
-            OnboardingVisual(imageName: Images.onboardingSecondPage)
+            OnboardingVisual(animation: .palette, isActive: isActive)
 
             Spacer(minLength: 0)
         }
@@ -192,6 +193,7 @@ struct InspireCreatePage: View {
 // MARK: - Screen 3: Quick Find
 
 struct QuickFindPage: View {
+    var isActive = true
     var body: some View {
         VStack(spacing: 0) {
             OnboardingHeader(
@@ -199,7 +201,7 @@ struct QuickFindPage: View {
                 subtext: "Мгновенный доступ к названиям и цветовым кодам в любых форматах — HEX, RGB, CMYK"
             )
 
-            OnboardingVisual(imageName: Images.onboardingThirdPage)
+            OnboardingVisual(animation: .search, isActive: isActive)
 
             Spacer(minLength: 0)
         }

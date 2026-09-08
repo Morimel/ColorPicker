@@ -10,31 +10,66 @@ import AVFoundation
 
 // MARK: - CameraColorPickerView
 
+/// Thin wrapper: `@Environment` values aren't available until the view is in
+/// the hierarchy, so the view model — which owns the store outright rather
+/// than receiving it per call — is created once here and handed down.
 struct CameraColorPickerView: View {
-
-    @Environment(\.dismiss) private var dismiss
     @Environment(SavedColorsStore.self) private var savedColorsStore
-
-    @State private var cameraController = CameraFrameController()
-    @State private var permissionStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    @State private var detectedColor = RGBColor(r: 204, g: 197, b: 143)
-    @State private var note: String = ""
-    @State private var sampleTimer: Timer?
-    @State private var isFlashOn = false
-    @FocusState private var isNoteFocused: Bool
-
-    /// Colors captured with "+" during this session, kept in memory only
-    /// until "Save" commits them all to `SavedColorsStore` at once.
-    @State private var stagedColors: [SavedColor] = []
-    @State private var showSavedToast = false
-
-    private var nearestRAL: RALColor { RALPalette.nearestRALColor(to: detectedColor) }
+    @State private var viewModel: CameraViewModel?
 
     var body: some View {
-        VStack(spacing: 0) {
-            cameraContent
+        Group {
+            if let viewModel {
+                CameraColorPickerContent(viewModel: viewModel)
+            }
+        }
+        .task {
+            if viewModel == nil {
+                viewModel = CameraViewModel(store: savedColorsStore)
+            }
+        }
+    }
+}
 
-            resultSection
+// MARK: - CameraColorPickerContent
+
+private struct CameraColorPickerContent: View {
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @Bindable var viewModel: CameraViewModel
+    @FocusState private var isNoteFocused: Bool
+
+    var body: some View {
+        GeometryReader { geometry in
+            // Landscape (or an iPad's regular width) puts the preview and the
+            // result side by side instead of stacking them, so the capture
+            // flow keeps working when there isn't much vertical room.
+            let isSideBySide = geometry.size.width > geometry.size.height || horizontalSizeClass == .regular
+
+            Group {
+                if isSideBySide {
+                    HStack(spacing: 0) {
+                        cameraContent
+                            .frame(width: geometry.size.width * 0.55)
+                        ScrollView {
+                            resultSection
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                } else {
+                    VStack(spacing: 0) {
+                        cameraContent
+                            .frame(height: geometry.size.height * 0.46)
+                        ScrollView {
+                            resultSection
+                        }
+                    }
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .background(Color(.systemBackground))
         .contentShape(Rectangle())
@@ -55,38 +90,34 @@ struct CameraColorPickerView: View {
                     .font(.headline)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button(action: saveStagedColors) {
+                Button(action: viewModel.saveStagedColors) {
                     Image(systemName: "tray.and.arrow.down.fill")
-                        .foregroundStyle(stagedColors.isEmpty ? .tertiary : .primary)
+                        .foregroundStyle(viewModel.stagedColors.isEmpty ? .tertiary : .primary)
                 }
-                .disabled(stagedColors.isEmpty)
+                .disabled(viewModel.stagedColors.isEmpty)
             }
         }
-        .onAppear(perform: requestPermissionIfNeeded)
-        .onDisappear {
-            sampleTimer?.invalidate()
-            cameraController.setTorchEnabled(false)
-            cameraController.stop()
-        }
-        .savedToast(isPresented: $showSavedToast, text: "Сохранено")
+        .onAppear(perform: viewModel.requestPermissionIfNeeded)
+        .onDisappear(perform: viewModel.onDisappear)
+        .savedToast(isPresented: $viewModel.showSavedToast, text: "Сохранено")
     }
 
     @ViewBuilder
     private var cameraContent: some View {
-        switch permissionStatus {
+        switch viewModel.permissionStatus {
         case .authorized:
             ZStack {
-                CameraPreviewView(controller: cameraController)
+                CameraPreviewView(controller: viewModel.cameraController)
                     .onAppear {
-                        cameraController.start()
-                        startSampling()
+                        viewModel.cameraController.start()
+                        viewModel.startSampling()
                     }
 
                 Reticle()
 
                 HStack {
-                    Button(action: toggleFlash) {
-                        CameraOverlayButton(systemImage: isFlashOn ? "bolt.fill" : "bolt.slash.fill")
+                    Button(action: viewModel.toggleFlash) {
+                        CameraOverlayButton(systemImage: viewModel.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
                     }
 
                     Spacer()
@@ -98,8 +129,7 @@ struct CameraColorPickerView: View {
                 .padding(16)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 380)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.secondarySystemBackground))
         case .notDetermined:
             placeholder(text: "Запрашиваем доступ к камере…")
@@ -110,14 +140,13 @@ struct CameraColorPickerView: View {
         }
     }
 
-    private func placeholder(text: String) -> some View {
+    private func placeholder(text: LocalizedStringKey) -> some View {
         ZStack {
             Color(.secondarySystemBackground)
             Text(text)
                 .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 380)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var deniedPlaceholder: some View {
@@ -140,20 +169,19 @@ struct CameraColorPickerView: View {
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(Color.tealAccent)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 380)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.secondarySystemBackground))
     }
 
     private var resultSection: some View {
         VStack(spacing: 14) {
             ColorInfoCard(
-                rgb: detectedColor,
-                ral: nearestRAL,
-                trailingAction: addCurrentColor
+                rgb: viewModel.detectedColor,
+                ral: viewModel.nearestRAL,
+                trailingAction: viewModel.addCurrentColor
             )
 
-            TextField("Заметка (необязательно)", text: $note)
+            TextField("Заметка (необязательно)", text: $viewModel.note)
                 .focused($isNoteFocused)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -162,10 +190,12 @@ struct CameraColorPickerView: View {
                         .fill(Color(.secondarySystemBackground))
                 )
 
-            if !stagedColors.isEmpty {
+            if !viewModel.stagedColors.isEmpty {
                 stagedColorsStrip
+                    .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .animation(reduceMotion ? nil : AppMotion.spring, value: viewModel.stagedColors.count)
         .padding(16)
     }
 
@@ -177,53 +207,12 @@ struct CameraColorPickerView: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 0) {
-                ForEach(stagedColors) { color in
+                ForEach(viewModel.stagedColors) { color in
                     Color(hex: color.rgb.hexString)
                 }
             }
             .frame(height: 56)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        }
-    }
-
-    private func toggleFlash() {
-        isFlashOn.toggle()
-        cameraController.setTorchEnabled(isFlashOn)
-    }
-
-    private func addCurrentColor() {
-        let entry = SavedColor(rgb: detectedColor, ral: nearestRAL, note: note, createdAt: Date())
-        stagedColors.append(entry)
-    }
-
-    private func saveStagedColors() {
-        guard !stagedColors.isEmpty else { return }
-        for color in stagedColors {
-            savedColorsStore.add(rgb: color.rgb, note: color.note)
-        }
-        stagedColors.removeAll()
-        showSavedToast = true
-    }
-
-    private func requestPermissionIfNeeded() {
-        switch permissionStatus {
-        case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .video) { granted in
-                DispatchQueue.main.async {
-                    permissionStatus = granted ? .authorized : .denied
-                }
-            }
-        default:
-            break
-        }
-    }
-
-    private func startSampling() {
-        sampleTimer?.invalidate()
-        sampleTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
-            if let color = cameraController.centerPixelColor() {
-                detectedColor = color
-            }
         }
     }
 }
@@ -274,109 +263,6 @@ private struct CameraPreviewView: UIViewRepresentable {
         }
 
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-    }
-}
-
-// MARK: - CameraFrameController
-
-/// Owns the capture session and exposes the pixel color at the center of the
-/// current video frame, sampled from the live buffer (not the preview layer).
-@Observable
-final class CameraFrameController: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
-
-    let session = AVCaptureSession()
-
-    private let videoOutput = AVCaptureVideoDataOutput()
-    private let sampleQueue = DispatchQueue(label: "camera.frame.sample.queue")
-    private var latestPixelBuffer: CVPixelBuffer?
-    private let bufferLock = NSLock()
-    private var captureDevice: AVCaptureDevice?
-
-    override init() {
-        super.init()
-        configureSession()
-    }
-
-    private func configureSession() {
-        session.beginConfiguration()
-        session.sessionPreset = .medium
-
-        if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
-           let input = try? AVCaptureDeviceInput(device: device),
-           session.canAddInput(input) {
-            session.addInput(input)
-            captureDevice = device
-        }
-
-        videoOutput.setSampleBufferDelegate(self, queue: sampleQueue)
-        videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
-        videoOutput.alwaysDiscardsLateVideoFrames = true
-        if session.canAddOutput(videoOutput) {
-            session.addOutput(videoOutput)
-        }
-
-        session.commitConfiguration()
-    }
-
-    func start() {
-        guard !session.isRunning else { return }
-        sampleQueue.async { [session] in
-            session.startRunning()
-        }
-    }
-
-    func stop() {
-        guard session.isRunning else { return }
-        sampleQueue.async { [session] in
-            session.stopRunning()
-        }
-    }
-
-    /// Controls the torch (flashlight) for the live preview — not a photo
-    /// capture flash, since we're continuously sampling color, not shooting.
-    func setTorchEnabled(_ enabled: Bool) {
-        guard let captureDevice, captureDevice.hasTorch else { return }
-        guard (try? captureDevice.lockForConfiguration()) != nil else { return }
-        captureDevice.torchMode = enabled ? .on : .off
-        captureDevice.unlockForConfiguration()
-    }
-
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        bufferLock.lock()
-        latestPixelBuffer = pixelBuffer
-        bufferLock.unlock()
-    }
-
-    /// Samples the pixel at the center of the most recent video frame.
-    func centerPixelColor() -> RGBColor? {
-        bufferLock.lock()
-        let buffer = latestPixelBuffer
-        bufferLock.unlock()
-
-        guard let buffer else { return nil }
-
-        CVPixelBufferLockBaseAddress(buffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
-
-        guard let base = CVPixelBufferGetBaseAddress(buffer) else { return nil }
-
-        let width = CVPixelBufferGetWidth(buffer)
-        let height = CVPixelBufferGetHeight(buffer)
-        let bytesPerRow = CVPixelBufferGetBytesPerRow(buffer)
-
-        let x = width / 2
-        let y = height / 2
-
-        let pixelPointer = base.advanced(by: y * bytesPerRow + x * 4)
-        let pixel = pixelPointer.assumingMemoryBound(to: UInt8.self)
-
-        // kCVPixelFormatType_32BGRA byte order: B, G, R, A.
-        let b = Int(pixel[0])
-        let g = Int(pixel[1])
-        let r = Int(pixel[2])
-
-        return RGBColor(r: r, g: g, b: b)
     }
 }
 

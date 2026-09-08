@@ -1,41 +1,43 @@
 import SwiftUI
 
+/// Thin wrapper: `@Environment` values aren't available until the view is in
+/// the hierarchy, so the view model — which owns both stores outright rather
+/// than receiving them per call — is created once here and handed down.
 struct AddPaletteColorsView: View {
     let paletteID: UUID
 
-    @Environment(\.dismiss) private var dismiss
     @Environment(PaletteStore.self) private var paletteStore
     @Environment(SavedColorsStore.self) private var savedColorsStore
-    @State private var selectedIDs: Set<UUID> = []
-    @State private var hexText = ""
+    @State private var viewModel: AddPaletteColorsViewModel?
 
-    private var customRGB: RGBColor? {
-        RGBColor(hex: hexText.trimmingCharacters(in: .whitespacesAndNewlines))
-    }
-
-    private var hasHexInput: Bool {
-        !hexText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private var colorsToAdd: [SavedColor] {
-        var colors = savedColorsStore.savedColors.filter { selectedIDs.contains($0.id) }
-        if let rgb = customRGB {
-            colors.append(SavedColor(rgb: rgb, ral: RALPalette.nearestRALColor(to: rgb),
-                                     note: "", createdAt: Date()))
+    var body: some View {
+        Group {
+            if let viewModel {
+                AddPaletteColorsContent(viewModel: viewModel)
+            }
         }
-        return colors
+        .task {
+            if viewModel == nil {
+                viewModel = AddPaletteColorsViewModel(paletteID: paletteID, paletteStore: paletteStore, savedColorsStore: savedColorsStore)
+            }
+        }
     }
+}
+
+private struct AddPaletteColorsContent: View {
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var viewModel: AddPaletteColorsViewModel
 
     var body: some View {
         NavigationStack {
             List {
                 Section("Новый цвет") {
-                    TextField("HEX, например #A6B32A", text: $hexText)
+                    TextField("HEX, например #A6B32A", text: $viewModel.hexText)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
-                    if let rgb = customRGB {
+                    if let rgb = viewModel.customRGB {
                         ColorInfoCard(rgb: rgb, ral: RALPalette.nearestRALColor(to: rgb))
-                    } else if hasHexInput {
+                    } else if viewModel.hasHexInput {
                         Text("Введите HEX из 6 символов: 0–9, A–F.")
                             .font(.caption)
                             .foregroundStyle(.red)
@@ -43,26 +45,22 @@ struct AddPaletteColorsView: View {
                 }
 
                 Section("Сохранённые цвета") {
-                    if savedColorsStore.savedColors.isEmpty {
+                    if viewModel.savedColors.isEmpty {
                         Text("Нет сохранённых цветов. Добавьте новый цвет по HEX выше.")
                             .foregroundStyle(.secondary)
                     }
-                    ForEach(savedColorsStore.savedColors) { entry in
+                    ForEach(viewModel.savedColors) { entry in
                         Button {
-                            if selectedIDs.contains(entry.id) {
-                                selectedIDs.remove(entry.id)
-                            } else {
-                                selectedIDs.insert(entry.id)
-                            }
+                            viewModel.toggleSelection(entry.id)
                         } label: {
                             HStack {
                                 ColorInfoCard(rgb: entry.rgb, ral: entry.ral)
-                                Image(systemName: selectedIDs.contains(entry.id) ? "checkmark.circle.fill" : "circle")
+                                Image(systemName: viewModel.selectedIDs.contains(entry.id) ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(Color.tealAccent)
                             }
                         }
                         .buttonStyle(.plain)
-                        .accessibilityAddTraits(selectedIDs.contains(entry.id) ? .isSelected : [])
+                        .accessibilityAddTraits(viewModel.selectedIDs.contains(entry.id) ? .isSelected : [])
                     }
                 }
             }
@@ -73,11 +71,11 @@ struct AddPaletteColorsView: View {
                     Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Добавить (\(colorsToAdd.count))") {
-                        paletteStore.add(colors: colorsToAdd, to: paletteID)
+                    Button("Добавить (\(viewModel.colorsToAdd.count))") {
+                        viewModel.confirm()
                         dismiss()
                     }
-                    .disabled(colorsToAdd.isEmpty || (hasHexInput && customRGB == nil))
+                    .disabled(viewModel.colorsToAdd.isEmpty || (viewModel.hasHexInput && viewModel.customRGB == nil))
                 }
             }
         }

@@ -6,11 +6,56 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A11000000000000000000001 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = A11000000000000000000002 /* Lottie */; };
+		B22000000000000000000001 /* ColorPickerWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B22000000000000000000002 /* ColorPickerWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B22000000000000000000007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FBC39B6B30481D1B0051F12D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B22000000000000000000009;
+			remoteInfo = ColorPickerWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B22000000000000000000006 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B22000000000000000000001 /* ColorPickerWidgets.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		B22000000000000000000002 /* ColorPickerWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ColorPickerWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FBC39B7330481D1B0051F12D /* ColorPicker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ColorPicker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		B22000000000000000000003 /* SharedColors */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SharedColors;
+			sourceTree = "<group>";
+		};
+		B22000000000000000000004 /* ColorPickerWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ColorPickerWidgets;
+			sourceTree = "<group>";
+		};
+		B22000000000000000000005 /* Config */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Config;
+			sourceTree = "<group>";
+		};
 		FBC39B7530481D1B0051F12D /* ColorPicker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ColorPicker;
@@ -19,10 +64,18 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		B22000000000000000000012 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FBC39B7030481D1B0051F12D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A11000000000000000000001 /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -33,6 +86,9 @@
 			isa = PBXGroup;
 			children = (
 				FBC39B7530481D1B0051F12D /* ColorPicker */,
+				B22000000000000000000003 /* SharedColors */,
+				B22000000000000000000004 /* ColorPickerWidgets */,
+				B22000000000000000000005 /* Config */,
 				FBC39B7430481D1B0051F12D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +97,7 @@
 			isa = PBXGroup;
 			children = (
 				FBC39B7330481D1B0051F12D /* ColorPicker.app */,
+				B22000000000000000000002 /* ColorPickerWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,6 +105,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		B22000000000000000000009 /* ColorPickerWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B22000000000000000000010 /* Build configuration list for PBXNativeTarget "ColorPickerWidgets" */;
+			buildPhases = (
+				B22000000000000000000011 /* Sources */,
+				B22000000000000000000012 /* Frameworks */,
+				B22000000000000000000013 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B22000000000000000000003 /* SharedColors */,
+				B22000000000000000000004 /* ColorPickerWidgets */,
+			);
+			name = ColorPickerWidgets;
+			packageProductDependencies = (
+			);
+			productName = ColorPickerWidgets;
+			productReference = B22000000000000000000002 /* ColorPickerWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		FBC39B7230481D1B0051F12D /* ColorPicker */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FBC39B8030481D1C0051F12D /* Build configuration list for PBXNativeTarget "ColorPicker" */;
@@ -55,16 +135,20 @@
 				FBC39B6F30481D1B0051F12D /* Sources */,
 				FBC39B7030481D1B0051F12D /* Frameworks */,
 				FBC39B7130481D1B0051F12D /* Resources */,
+				B22000000000000000000006 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B22000000000000000000008 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				B22000000000000000000003 /* SharedColors */,
 				FBC39B7530481D1B0051F12D /* ColorPicker */,
 			);
 			name = ColorPicker;
 			packageProductDependencies = (
+				A11000000000000000000002 /* Lottie */,
 			);
 			productName = ColorPicker;
 			productReference = FBC39B7330481D1B0051F12D /* ColorPicker.app */;
@@ -80,31 +164,56 @@
 				LastSwiftUpdateCheck = 2660;
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
+					B22000000000000000000009 = {
+						CreatedOnToolsVersion = 26.6;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
+					};
 					FBC39B7230481D1B0051F12D = {
 						CreatedOnToolsVersion = 26.6;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
 			buildConfigurationList = FBC39B6E30481D1B0051F12D /* Build configuration list for PBXProject "ColorPicker" */;
-			developmentRegion = en;
+			developmentRegion = ru;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
 				Base,
+				ru,
+				en,
 			);
 			mainGroup = FBC39B6A30481D1B0051F12D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A11000000000000000000003 /* XCRemoteSwiftPackageReference "lottie-spm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FBC39B7430481D1B0051F12D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				B22000000000000000000009 /* ColorPickerWidgets */,
 				FBC39B7230481D1B0051F12D /* ColorPicker */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		B22000000000000000000013 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FBC39B7130481D1B0051F12D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -115,6 +224,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		B22000000000000000000011 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FBC39B6F30481D1B0051F12D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -124,7 +240,73 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		B22000000000000000000008 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B22000000000000000000009 /* ColorPickerWidgets */;
+			targetProxy = B22000000000000000000007 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		B22000000000000000000014 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = Config/ColorPickerWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 693RJ6S5KS;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/ColorPickerWidgets-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Color Widgets";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.IsaMelsov.ColorPicker.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B22000000000000000000015 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = Config/ColorPickerWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 693RJ6S5KS;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/ColorPickerWidgets-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Color Widgets";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.IsaMelsov.ColorPicker.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		FBC39B7E30481D1C0051F12D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -251,18 +433,22 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/ColorPicker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 693RJ6S5KS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/ColorPicker-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Color Picker ";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Определитель цвета использует камеру, чтобы определять цвет объектов в реальном времени.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Определитель цвета использует фотогалерею, чтобы определять цвет объектов на ваших фотографиях.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -286,18 +472,22 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/ColorPicker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 693RJ6S5KS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/ColorPicker-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Color Picker ";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Определитель цвета использует камеру, чтобы определять цвет объектов в реальном времени.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Определитель цвета использует фотогалерею, чтобы определять цвет объектов на ваших фотографиях.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -319,6 +509,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		B22000000000000000000010 /* Build configuration list for PBXNativeTarget "ColorPickerWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B22000000000000000000014 /* Debug */,
+				B22000000000000000000015 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FBC39B6E30481D1B0051F12D /* Build configuration list for PBXProject "ColorPicker" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -338,6 +537,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A11000000000000000000003 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
+			requirement = {
+				kind = exactVersion;
+				version = 4.6.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A11000000000000000000002 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A11000000000000000000003 /* XCRemoteSwiftPackageReference "lottie-spm" */;
+			productName = Lottie;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = FBC39B6B30481D1B0051F12D /* Project object */;
 }

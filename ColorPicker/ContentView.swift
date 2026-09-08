@@ -9,27 +9,31 @@ import SwiftUI
 
 struct ContentView: View {
 
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
-
-    // Note: an @State default value can't reference a sibling @AppStorage property
-    // (property initializers run before `self` exists), so we read the same key
-    // straight out of UserDefaults here to seed the initial value.
-    @State private var isOnboardingVisible = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
-
-    @State private var savedColorsStore = SavedColorsStore()
-    @State private var paletteStore = PaletteStore()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var viewModel = RootViewModel()
 
     var body: some View {
-        HomeView()
-            .environment(savedColorsStore)
-            .environment(paletteStore)
+        HomeView(incomingURL: $viewModel.incomingURL)
+            .environment(viewModel.savedColorsStore)
+            .environment(viewModel.paletteStore)
             .overlay {
-                if isOnboardingVisible {
-                    OnboardingView(isOnboardingVisible: $isOnboardingVisible)
+                if viewModel.isOnboardingVisible {
+                    OnboardingView(isOnboardingVisible: $viewModel.isOnboardingVisible)
                         .transition(.opacity)
                 }
             }
-            .animation(.easeInOut, value: isOnboardingVisible)
+            .onOpenURL { url in
+                viewModel.handleOpenURL(url)
+            }
+            .alert("Сохранённые цвета", isPresented: Binding(
+                get: { viewModel.persistenceError != nil },
+                set: { if !$0 { viewModel.persistenceError = nil } }
+            )) {
+                Button("OK") { viewModel.persistenceError = nil }
+            } message: {
+                Text(viewModel.persistenceError ?? "")
+            }
+            .animation(reduceMotion ? nil : .easeInOut, value: viewModel.isOnboardingVisible)
     }
 }
 

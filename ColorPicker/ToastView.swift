@@ -10,10 +10,14 @@ import SwiftUI
 // MARK: - ToastView
 
 struct ToastView: View {
-    let text: String
+    let text: LocalizedStringKey
 
     var body: some View {
-        Text(text)
+        HStack(spacing: 10) {
+            LottieArtwork(asset: .success)
+                .frame(width: 30, height: 30)
+            Text(text)
+        }
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.white)
             .padding(.horizontal, 20)
@@ -27,8 +31,9 @@ struct ToastView: View {
 /// Shows a brief bottom toast whenever `isPresented` becomes `true`, then
 /// automatically flips it back to `false` after a couple of seconds.
 private struct SavedToastModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var isPresented: Bool
-    let text: String
+    let text: LocalizedStringKey
 
     func body(content: Content) -> some View {
         content
@@ -36,22 +41,24 @@ private struct SavedToastModifier: ViewModifier {
                 if isPresented {
                     ToastView(text: text)
                         .padding(.bottom, 24)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .animation(.easeInOut, value: isPresented)
-            .onChange(of: isPresented) { _, isShown in
-                guard isShown else { return }
-                Task {
-                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+            .animation(reduceMotion ? nil : AppMotion.spring, value: isPresented)
+            .task(id: isPresented) {
+                guard isPresented else { return }
+                do {
+                    try await Task.sleep(for: .seconds(2))
                     isPresented = false
+                } catch {
+                    // A dismissed toast or disappearing screen cancels its timer.
                 }
             }
     }
 }
 
 extension View {
-    func savedToast(isPresented: Binding<Bool>, text: String) -> some View {
+    func savedToast(isPresented: Binding<Bool>, text: LocalizedStringKey) -> some View {
         modifier(SavedToastModifier(isPresented: isPresented, text: text))
     }
 }

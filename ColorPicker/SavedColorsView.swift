@@ -9,52 +9,73 @@ import SwiftUI
 
 // MARK: - SavedColorsView
 
+/// Thin wrapper: `@Environment` values aren't available until the view is in
+/// the hierarchy, so the view model — which owns both stores outright rather
+/// than receiving them per call — is created once here and handed down.
 struct SavedColorsView: View {
-
-    private enum Tab: Hashable {
-        case colors, palettes
-    }
-
-    @Environment(\.dismiss) private var dismiss
     @Environment(SavedColorsStore.self) private var savedColorsStore
     @Environment(PaletteStore.self) private var paletteStore
-
-    @State private var selectedTab: Tab = .colors
-    @State private var paletteToBrowse: Palette?
-    @State private var showsCopiedToast = false
-
-    @State private var isSelecting = false
-    @State private var selectedColorIDs: Set<UUID> = []
-    @State private var selectedPaletteIDs: Set<UUID> = []
-
-    private var hasSelection: Bool {
-        switch selectedTab {
-        case .colors: !selectedColorIDs.isEmpty
-        case .palettes: !selectedPaletteIDs.isEmpty
-        }
-    }
-
-    private var selectionShareText: String {
-        switch selectedTab {
-        case .colors:
-            savedColorsStore.savedColors.filter { selectedColorIDs.contains($0.id) }
-                .map(\.shareText).joined(separator: "\n\n")
-        case .palettes:
-            paletteStore.palettes.filter { selectedPaletteIDs.contains($0.id) }
-                .map(\.shareText).joined(separator: "\n\n")
-        }
-    }
-
-    private var isAllSelected: Bool {
-        switch selectedTab {
-        case .colors:
-            !savedColorsStore.savedColors.isEmpty && selectedColorIDs.count == savedColorsStore.savedColors.count
-        case .palettes:
-            !paletteStore.palettes.isEmpty && selectedPaletteIDs.count == paletteStore.palettes.count
-        }
-    }
+    @State private var viewModel: SavedColorsViewModel?
 
     var body: some View {
+        Group {
+            if let viewModel {
+                SavedColorsContent(viewModel: viewModel)
+            }
+        }
+        .task {
+            if viewModel == nil {
+                viewModel = SavedColorsViewModel(savedColorsStore: savedColorsStore, paletteStore: paletteStore)
+            }
+        }
+    }
+}
+
+// MARK: - SavedColorsContent
+
+private struct SavedColorsContent: View {
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Namespace private var tabHighlight
+
+    @Bindable var viewModel: SavedColorsViewModel
+
+    private var isRegularWidth: Bool { horizontalSizeClass == .regular }
+
+    var body: some View {
+        Group {
+            if isRegularWidth {
+                NavigationSplitView {
+                    sidebar
+                } detail: {
+                    if let colorToBrowse = viewModel.colorToBrowse {
+                        SavedColorDetailView(colorID: colorToBrowse)
+                    } else {
+                        ContentUnavailableView("Выберите цвет", systemImage: "paintpalette",
+                                                description: Text("Цвет откроется здесь."))
+                    }
+                }
+            } else {
+                sidebar
+                    .navigationDestination(item: $viewModel.colorToBrowse) { id in
+                        SavedColorDetailView(colorID: id)
+                    }
+            }
+        }
+        .sheet(item: $viewModel.paletteToBrowse) { palette in
+            NavigationStack {
+                PaletteDetailView(palette: palette)
+            }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    // MARK: Sidebar (Home-screen-sized column on iPad, full screen on iPhone)
+
+    private var sidebar: some View {
         VStack(spacing: 16) {
             segmentedControl
                 .padding(.horizontal, 16)
@@ -62,14 +83,15 @@ struct SavedColorsView: View {
 
             content
         }
+        .animation(reduceMotion ? nil : AppMotion.spring, value: viewModel.isSelecting)
         .background(Color(.systemBackground))
-        .savedToast(isPresented: $showsCopiedToast, text: "Скопировано")
+        .savedToast(isPresented: $viewModel.showsCopiedToast, text: "Скопировано")
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                if isSelecting {
-                    Button("Отмена", action: exitSelectionMode)
+                if viewModel.isSelecting {
+                    Button("Отмена", action: viewModel.exitSelectionMode)
                         .foregroundStyle(Color.tealAccent)
                 } else {
                     Button(action: { dismiss() }) {
@@ -82,41 +104,34 @@ struct SavedColorsView: View {
                 Text("Сохраненные")
                     .font(.headline)
             }
-            if isSelecting {
+            if viewModel.isSelecting {
                 ToolbarItem(placement: .topBarTrailing) {
-                    ShareLink(item: selectionShareText) {
+                    ShareLink(item: viewModel.selectionShareText) {
                         Label("Поделиться", systemImage: "square.and.arrow.up")
                     }
-                    .disabled(!hasSelection)
+                    .disabled(!viewModel.hasSelection())
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: toggleSelectAll) {
-                        Image(systemName: isAllSelected ? "checkmark.circle.fill" : "checkmark.circle")
+                    Button(action: viewModel.toggleSelectAll) {
+                        Image(systemName: viewModel.isAllSelected ? "checkmark.circle.fill" : "checkmark.circle")
                             .foregroundStyle(Color.tealAccent)
                     }
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                if isSelecting {
-                    Button(action: deleteSelected) {
+                if viewModel.isSelecting {
+                    Button(action: viewModel.deleteSelected) {
                         Image(systemName: "trash")
-                            .foregroundStyle(hasSelection ? .red : .secondary)
+                            .foregroundStyle(viewModel.hasSelection() ? .red : .secondary)
                     }
-                    .disabled(!hasSelection)
+                    .disabled(!viewModel.hasSelection())
                 } else {
-                    Button(action: { isSelecting = true }) {
+                    Button(action: { viewModel.isSelecting = true }) {
                         Image(systemName: "ellipsis")
                             .foregroundStyle(.primary)
                     }
                 }
             }
-        }
-        .sheet(item: $paletteToBrowse) { palette in
-            NavigationStack {
-                PaletteDetailView(palette: palette)
-            }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
         }
     }
 
@@ -134,11 +149,11 @@ struct SavedColorsView: View {
         )
     }
 
-    private func segmentButton(tab: Tab, icon: String) -> some View {
-        let isSelected = selectedTab == tab
+    private func segmentButton(tab: SavedColorsViewModel.Tab, icon: String) -> some View {
+        let isSelected = viewModel.selectedTab == tab
         return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                selectedTab = tab
+            withAnimation(reduceMotion ? nil : AppMotion.spring) {
+                viewModel.selectedTab = tab
             }
         } label: {
             Image(systemName: icon)
@@ -146,12 +161,14 @@ struct SavedColorsView: View {
                 .foregroundStyle(isSelected ? Color.tealAccent : .secondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 36)
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color(.systemBackground))
-                        .opacity(isSelected ? 1 : 0)
-                        .shadow(color: .black.opacity(isSelected ? 0.12 : 0), radius: 4, y: 2)
-                )
+                .background {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+                            .matchedGeometryEffect(id: "selectedTab", in: tabHighlight)
+                    }
+                }
         }
         .buttonStyle(.plain)
     }
@@ -160,30 +177,50 @@ struct SavedColorsView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch selectedTab {
+        switch viewModel.selectedTab {
         case .colors:
             colorsTab
-                .transition(.opacity.combined(with: .move(edge: .leading)))
+                .transition(.opacity)
         case .palettes:
             palettesTab
-                .transition(.opacity.combined(with: .move(edge: .trailing)))
+                .transition(.opacity)
         }
     }
 
     @ViewBuilder
     private var colorsTab: some View {
-        if savedColorsStore.savedColors.isEmpty {
-            emptyState(icon: "paintpalette", text: "Нет сохраненных цветов")
+        if viewModel.colors.isEmpty {
+            emptyState(text: "Нет сохраненных цветов")
+        } else if isRegularWidth {
+            // iPad: a reflowing grid of compact swatches rather than full-width rows.
+            ScrollView {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 16)], spacing: 16) {
+                    ForEach(viewModel.colors) { entry in
+                        Button {
+                            if viewModel.isSelecting {
+                                viewModel.toggleColorSelection(entry.id)
+                            } else {
+                                viewModel.colorToBrowse = entry.id
+                            }
+                        } label: {
+                            SavedColorGridCell(color: entry, isSelected: viewModel.selectedColorIDs.contains(entry.id), showsSelection: viewModel.isSelecting)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(viewModel.selectedColorIDs.contains(entry.id) ? .isSelected : [])
+                    }
+                }
+                .padding(16)
+            }
         } else {
             List {
-                ForEach(savedColorsStore.savedColors) { entry in
+                ForEach(viewModel.colors) { entry in
                     HStack(spacing: 12) {
-                        if isSelecting {
-                            selectionIndicator(isSelected: selectedColorIDs.contains(entry.id))
+                        if viewModel.isSelecting {
+                            selectionIndicator(isSelected: viewModel.selectedColorIDs.contains(entry.id))
                         }
                         ColorInfoCard(rgb: entry.rgb, ral: entry.ral,
-                                      onCopied: isSelecting ? nil : { showsCopiedToast = true })
-                        if !isSelecting {
+                                      onCopied: viewModel.isSelecting ? nil : { viewModel.markCopied() })
+                        if !viewModel.isSelecting {
                             ShareLink(item: entry.shareText) {
                                 Label("Поделиться цветом", systemImage: "square.and.arrow.up")
                                     .labelStyle(.iconOnly)
@@ -193,8 +230,10 @@ struct SavedColorsView: View {
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        if isSelecting {
-                            toggleColorSelection(entry.id)
+                        if viewModel.isSelecting {
+                            viewModel.toggleColorSelection(entry.id)
+                        } else {
+                            viewModel.colorToBrowse = entry.id
                         }
                     }
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
@@ -202,7 +241,7 @@ struct SavedColorsView: View {
                     .listRowBackground(Color.clear)
                 }
                 .onDelete { offsets in
-                    savedColorsStore.remove(at: offsets)
+                    viewModel.removeColors(at: offsets)
                 }
             }
             .listStyle(.plain)
@@ -212,23 +251,43 @@ struct SavedColorsView: View {
 
     @ViewBuilder
     private var palettesTab: some View {
-        if paletteStore.palettes.isEmpty {
-            emptyState(icon: "square.stack", text: "Нет сохраненных палитр")
+        if viewModel.palettes.isEmpty {
+            emptyState(text: "Нет сохраненных палитр")
+        } else if isRegularWidth {
+            // iPad: a reflowing grid of palette swatch cards rather than full-width rows.
+            ScrollView {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 16)], spacing: 16) {
+                    ForEach(viewModel.palettes) { palette in
+                        Button {
+                            if viewModel.isSelecting {
+                                viewModel.togglePaletteSelection(palette.id)
+                            } else {
+                                viewModel.paletteToBrowse = palette
+                            }
+                        } label: {
+                            SavedPaletteGridCell(palette: palette, isSelected: viewModel.selectedPaletteIDs.contains(palette.id), showsSelection: viewModel.isSelecting)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(viewModel.selectedPaletteIDs.contains(palette.id) ? .isSelected : [])
+                    }
+                }
+                .padding(16)
+            }
         } else {
             List {
-                ForEach(paletteStore.palettes) { palette in
+                ForEach(viewModel.palettes) { palette in
                     HStack(spacing: 12) {
-                        if isSelecting {
-                            selectionIndicator(isSelected: selectedPaletteIDs.contains(palette.id))
+                        if viewModel.isSelecting {
+                            selectionIndicator(isSelected: viewModel.selectedPaletteIDs.contains(palette.id))
                         }
                         ColorStripView(colors: palette.colors.map(\.rgb))
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        if isSelecting {
-                            togglePaletteSelection(palette.id)
+                        if viewModel.isSelecting {
+                            viewModel.togglePaletteSelection(palette.id)
                         } else {
-                            paletteToBrowse = palette
+                            viewModel.paletteToBrowse = palette
                         }
                     }
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
@@ -236,7 +295,7 @@ struct SavedColorsView: View {
                     .listRowBackground(Color.clear)
                 }
                 .onDelete { offsets in
-                    paletteStore.remove(at: offsets)
+                    viewModel.removePalettes(at: offsets)
                 }
             }
             .listStyle(.plain)
@@ -250,63 +309,86 @@ struct SavedColorsView: View {
             .foregroundStyle(isSelected ? Color.tealAccent : Color(.tertiaryLabel))
     }
 
-    private func emptyState(icon: String, text: String) -> some View {
+    private func emptyState(text: String) -> some View {
         VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 40))
-                .foregroundStyle(.secondary)
+            LottieArtwork(asset: .palette)
+                .frame(width: 132, height: 132)
             Text(text)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+}
 
-    // MARK: Multi-select
+// MARK: - Grid cells (iPad)
 
-    private func toggleColorSelection(_ id: UUID) {
-        if selectedColorIDs.contains(id) {
-            selectedColorIDs.remove(id)
-        } else {
-            selectedColorIDs.insert(id)
+private struct SavedColorGridCell: View {
+    let color: SavedColor
+    var isSelected = false
+    var showsSelection = false
+
+    var body: some View {
+        VStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(hex: color.hex))
+                .aspectRatio(1, contentMode: .fit)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(.primary.opacity(0.08), lineWidth: 1)
+                }
+                .overlay(alignment: .topTrailing) {
+                    if showsSelection {
+                        selectionBadge(systemImage: isSelected ? "checkmark.circle.fill" : "circle", tinted: isSelected)
+                    } else if color.isFavorite {
+                        selectionBadge(systemImage: "star.fill", tinted: false)
+                    }
+                }
+            Text(color.hex)
+                .font(.caption.monospaced().weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .foregroundStyle(.primary)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(color.isFavorite ? "Избранный цвет" : "Цвет") \(color.hex)")
     }
 
-    private func togglePaletteSelection(_ id: UUID) {
-        if selectedPaletteIDs.contains(id) {
-            selectedPaletteIDs.remove(id)
-        } else {
-            selectedPaletteIDs.insert(id)
-        }
+    private func selectionBadge(systemImage: String, tinted: Bool) -> some View {
+        Image(systemName: systemImage)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(tinted ? Color.tealAccent : .white)
+            .padding(5)
+            .background(.black.opacity(tinted ? 0 : 0.25), in: Circle())
+            .padding(6)
     }
+}
 
-    private func toggleSelectAll() {
-        switch selectedTab {
-        case .colors:
-            selectedColorIDs = isAllSelected ? [] : Set(savedColorsStore.savedColors.map(\.id))
-        case .palettes:
-            selectedPaletteIDs = isAllSelected ? [] : Set(paletteStore.palettes.map(\.id))
+private struct SavedPaletteGridCell: View {
+    let palette: Palette
+    var isSelected = false
+    var showsSelection = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ColorStripView(colors: palette.colors.prefix(6).map(\.rgb), height: 72, cornerRadius: 12)
+                .overlay(alignment: .topTrailing) {
+                    if showsSelection {
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(isSelected ? Color.tealAccent : .white)
+                            .padding(5)
+                            .background(.black.opacity(isSelected ? 0 : 0.25), in: Circle())
+                            .padding(6)
+                    }
+                }
+            Text(palette.name)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .foregroundStyle(.primary)
         }
-    }
-
-    private func deleteSelected() {
-        switch selectedTab {
-        case .colors:
-            for entry in savedColorsStore.savedColors where selectedColorIDs.contains(entry.id) {
-                savedColorsStore.remove(entry)
-            }
-        case .palettes:
-            for palette in paletteStore.palettes where selectedPaletteIDs.contains(palette.id) {
-                paletteStore.remove(palette)
-            }
-        }
-        exitSelectionMode()
-    }
-
-    private func exitSelectionMode() {
-        isSelecting = false
-        selectedColorIDs.removeAll()
-        selectedPaletteIDs.removeAll()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(palette.name)
     }
 }
 

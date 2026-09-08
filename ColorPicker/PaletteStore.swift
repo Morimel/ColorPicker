@@ -24,7 +24,7 @@ struct Palette: Identifiable, Codable, Equatable {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         formatter.timeStyle = .none
-        return "Палитра \(formatter.string(from: date))"
+        return String(localized: "Палитра \(formatter.string(from: date))")
     }
 }
 

@@ -9,22 +9,34 @@ import SwiftUI
 
 // MARK: - PaletteDetailView
 
-/// Browse, share, and extend a saved palette.
+/// Browse, share, and extend a saved palette. Thin wrapper: `@Environment`
+/// values aren't available until the view is in the hierarchy, so the view
+/// model — which owns the store outright rather than receiving it per call —
+/// is created once here and handed down.
 struct PaletteDetailView: View {
-
     let palette: Palette
 
     @Environment(PaletteStore.self) private var paletteStore
-    @State private var showsAddColors = false
-    @State private var showsCopiedToast = false
+    @State private var viewModel: PaletteDetailViewModel?
 
-    private var currentPalette: Palette {
-        paletteStore.palettes.first { $0.id == palette.id } ?? palette
+    var body: some View {
+        Group {
+            if let viewModel {
+                PaletteDetailContent(viewModel: viewModel)
+            }
+        }
+        .task {
+            if viewModel == nil {
+                viewModel = PaletteDetailViewModel(palette: palette, store: paletteStore)
+            }
+        }
     }
+}
 
-    private var entries: [(rgb: RGBColor, ral: RALColor)] {
-        currentPalette.colors.map { ($0.rgb, $0.ral) }
-    }
+// MARK: - PaletteDetailContent
+
+private struct PaletteDetailContent: View {
+    @Bindable var viewModel: PaletteDetailViewModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,9 +46,9 @@ struct PaletteDetailView: View {
 
             ScrollView {
                 LazyVStack(spacing: 12) {
-                    ForEach(Array(entries.enumerated()), id: \.offset) { _, entry in
+                    ForEach(Array(viewModel.entries.enumerated()), id: \.offset) { _, entry in
                         ColorInfoCard(rgb: entry.rgb, ral: entry.ral,
-                                      onCopied: { showsCopiedToast = true })
+                                      onCopied: viewModel.markCopied)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -45,18 +57,18 @@ struct PaletteDetailView: View {
             }
         }
         .background(Color(.systemBackground))
-        .navigationTitle(currentPalette.name)
+        .navigationTitle(viewModel.currentPalette.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: currentPalette.shareText) {
+                ShareLink(item: viewModel.currentPalette.shareText) {
                     Label("Поделиться палитрой", systemImage: "square.and.arrow.up")
                 }
             }
         }
         .safeAreaInset(edge: .bottom) {
             Button {
-                showsAddColors = true
+                viewModel.showsAddColors = true
             } label: {
                 Label("Добавить цвета", systemImage: "plus")
                     .font(.headline)
@@ -68,14 +80,14 @@ struct PaletteDetailView: View {
             .padding(16)
             .background(.regularMaterial)
         }
-        .sheet(isPresented: $showsAddColors) {
-            AddPaletteColorsView(paletteID: palette.id)
+        .sheet(isPresented: $viewModel.showsAddColors) {
+            AddPaletteColorsView(paletteID: viewModel.currentPalette.id)
         }
-        .savedToast(isPresented: $showsCopiedToast, text: "Скопировано")
+        .savedToast(isPresented: $viewModel.showsCopiedToast, text: "Скопировано")
     }
 
     private var colorStrip: some View {
-        ColorStripView(colors: entries.map(\.rgb))
+        ColorStripView(colors: viewModel.entries.map(\.rgb))
     }
 }
 
