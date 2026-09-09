@@ -21,6 +21,7 @@ final class CameraViewModel {
     private var sampleTimer: Timer?
 
     var nearestRAL: RALColor { RALPalette.nearestRALColor(to: detectedColor) }
+    var nearestCatalogMatch: NearestCatalogMatch? { NearestCatalogColor.find(for: detectedColor) }
 
     init(store: SavedColorsStore) {
         self.store = store

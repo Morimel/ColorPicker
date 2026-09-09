@@ -187,6 +187,10 @@ private struct CameraColorPickerContent: View {
                 trailingAction: viewModel.addCurrentColor
             )
 
+            if let match = viewModel.nearestCatalogMatch {
+                CatalogMatchCard(match: match)
+            }
+
             TextField("Заметка (необязательно)", text: $viewModel.note)
                 .focused($isNoteFocused)
                 .padding(.horizontal, 16)

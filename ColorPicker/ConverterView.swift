@@ -59,6 +59,10 @@ private struct ConverterContent: View {
 
             ColorInfoCard(rgb: viewModel.currentColor, ral: viewModel.nearestRAL, showsBorder: true)
 
+            if let match = viewModel.nearestCatalogMatch {
+                CatalogMatchCard(match: match)
+            }
+
             Spacer(minLength: 12)
 
             saveButton

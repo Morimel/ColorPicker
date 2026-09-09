@@ -30,6 +30,7 @@ final class ConverterViewModel {
     var kText = "0"
 
     var nearestRAL: RALColor { RALPalette.nearestRALColor(to: currentColor) }
+    var nearestCatalogMatch: NearestCatalogMatch? { NearestCatalogColor.find(for: currentColor) }
 
     init(store: SavedColorsStore) {
         self.store = store

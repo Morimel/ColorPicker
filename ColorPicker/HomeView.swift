@@ -225,8 +225,12 @@ struct PalettesView: View {
 private struct PalettesContent: View {
     let viewModel: PalettesViewModel
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var pendingNewPalette: Palette?
     @State private var showsNewPalette = false
+    @State private var pdfToShare: URL?
+    @State private var showsPDFShareSheet = false
 
     var body: some View {
         Group {
@@ -236,13 +240,63 @@ private struct PalettesContent: View {
                 list
             }
         }
+        .animation(reduceMotion ? nil : AppMotion.spring, value: viewModel.isSelecting)
         .navigationTitle("Палитры")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(viewModel.isSelecting)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(action: createPalette) {
-                    Label("Новая палитра", systemImage: "plus")
+            if viewModel.isSelecting {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Отмена", action: viewModel.exitSelectionMode)
+                        .foregroundStyle(Color.tealAccent)
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        ShareLink(item: viewModel.selectionShareText) {
+                            Label("Поделиться текстом", systemImage: "text.alignleft")
+                        }
+                        Button {
+                            exportSelectionPDF()
+                        } label: {
+                            Label("Экспортировать в PDF", systemImage: "doc.richtext")
+                        }
+                    } label: {
+                        Label("Поделиться", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(!viewModel.hasSelection())
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: viewModel.toggleSelectAll) {
+                        Image(systemName: viewModel.isAllSelected ? "checkmark.circle.fill" : "checkmark.circle")
+                            .foregroundStyle(Color.tealAccent)
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: viewModel.deleteSelected) {
+                        Image(systemName: "trash")
+                            .foregroundStyle(viewModel.hasSelection() ? .red : .secondary)
+                    }
+                    .disabled(!viewModel.hasSelection())
+                }
+            } else {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: createPalette) {
+                        Label("Новая палитра", systemImage: "plus")
+                    }
+                }
+                if !viewModel.palettes.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(action: { viewModel.isSelecting = true }) {
+                            Image(systemName: "ellipsis")
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showsPDFShareSheet) {
+            if let pdfToShare {
+                ShareSheet(activityItems: [pdfToShare])
             }
         }
         .navigationDestination(isPresented: $showsNewPalette) {
@@ -255,6 +309,12 @@ private struct PalettesContent: View {
     private func createPalette() {
         pendingNewPalette = viewModel.createPalette()
         showsNewPalette = true
+    }
+
+    private func exportSelectionPDF() {
+        guard let url = viewModel.exportSelectionPDF() else { return }
+        pdfToShare = url
+        showsPDFShareSheet = true
     }
 
     private var emptyState: some View {
@@ -278,14 +338,10 @@ private struct PalettesContent: View {
     private var list: some View {
         List {
             ForEach(viewModel.palettes) { palette in
-                NavigationLink {
-                    PaletteDetailView(palette: palette)
-                } label: {
-                    PaletteRow(palette: palette)
-                }
-                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
+                paletteRow(for: palette)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             }
             .onDelete { offsets in
                 viewModel.delete(at: offsets)
@@ -293,6 +349,33 @@ private struct PalettesContent: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+    }
+
+    @ViewBuilder
+    private func paletteRow(for palette: Palette) -> some View {
+        if viewModel.isSelecting {
+            HStack(spacing: 14) {
+                selectionIndicator(isSelected: viewModel.selectedPaletteIDs.contains(palette.id))
+                PaletteRow(palette: palette)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                viewModel.toggleSelection(palette.id)
+            }
+            .accessibilityAddTraits(viewModel.selectedPaletteIDs.contains(palette.id) ? .isSelected : [])
+        } else {
+            NavigationLink {
+                PaletteDetailView(palette: palette)
+            } label: {
+                PaletteRow(palette: palette)
+            }
+        }
+    }
+
+    private func selectionIndicator(isSelected: Bool) -> some View {
+        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+            .font(.system(size: 22))
+            .foregroundStyle(isSelected ? Color.tealAccent : Color(.tertiaryLabel))
     }
 }
 

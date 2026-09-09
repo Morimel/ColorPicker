@@ -70,6 +70,12 @@ final class PhotoPickerViewModel {
         self.paletteStore = paletteStore
     }
 
+    // MARK: Catalog matching
+
+    func nearestCatalogMatch(for color: RGBColor) -> NearestCatalogMatch? {
+        NearestCatalogColor.find(for: color)
+    }
+
     // MARK: Save
 
     func savePalette() {
@@ -290,7 +296,8 @@ final class PhotoPickerViewModel {
         guard let item else { return }
         Task {
             guard let data = try? await item.loadTransferable(type: Data.self),
-                  let image = UIImage(data: data) else { return }
+                  let rawImage = UIImage(data: data) else { return }
+            let image = rawImage.normalizedForSampling()
 
             await MainActor.run {
                 selectedImage = image
@@ -338,24 +345,76 @@ final class PhotoPickerViewModel {
 
         guard offset + 2 < CFDataGetLength(data) else { return nil }
 
-        // Most UIImage-backed CGImages are byte-order RGBA or BGRA; alphaInfo
-        // tells us which. We handle the common premultiplied-first/last cases.
-        let alphaInfo = cgImage.alphaInfo
-        let isBGRFirst = alphaInfo == .premultipliedFirst || alphaInfo == .first || alphaInfo == .noneSkipFirst
-
-        let r: Int
-        let g: Int
-        let b: Int
-        if isBGRFirst {
-            b = Int(bytes[offset + 1])
-            g = Int(bytes[offset + 2])
-            r = Int(bytes[offset + 3])
-        } else {
-            r = Int(bytes[offset])
-            g = Int(bytes[offset + 1])
-            b = Int(bytes[offset + 2])
-        }
+        // `image` always comes from `normalizedForSampling()`, which forces
+        // a fixed 8-bit, no-alpha, R-G-B byte layout regardless of what
+        // format the original asset decoded into (Display P3 HEIC vs sRGB
+        // JPEG vs premultiplied PNG all vary) — so there's exactly one
+        // layout to read here, not several to branch on.
+        let r = Int(bytes[offset])
+        let g = Int(bytes[offset + 1])
+        let b = Int(bytes[offset + 2])
 
         return RGBColor(r: r, g: g, b: b)
+    }
+}
+
+// MARK: - UIImage normalization
+
+private extension UIImage {
+    /// Redraws the image upright into one fixed, fully-known pixel format —
+    /// 8-bit, no alpha, R-G-B byte order, sRGB — instead of whatever format
+    /// the source asset happened to decode into.
+    ///
+    /// This fixes two independent problems at once:
+    /// - `imagePixelSize`/`sampleColor`/`loupeCrop` all read `cgImage`'s raw
+    ///   (un-rotated) width/height and pixel buffer. Camera-roll photos are
+    ///   very often stored rotated/mirrored via an orientation flag rather
+    ///   than physically, so without baking that in here, the raw buffer
+    ///   doesn't line up with what's actually displayed and the pipette
+    ///   samples the wrong spot.
+    /// - `sampleColor` parses raw bytes by hand. Leaving the source format
+    ///   as-is meant it varied per photo (`.noneSkipLast` for a typical
+    ///   JPEG/HEIC decode, `.premultipliedFirst`/little-endian for a
+    ///   `UIGraphicsImageRenderer` redraw, etc.), which no single fixed byte
+    ///   offset scheme can parse correctly for every case. Forcing one
+    ///   explicit format here means `sampleColor` never has to branch on it.
+    ///
+    /// sRGB is a deliberate choice, not an accident: this app's hex/RGB/
+    /// CMYK/RAL output are all sRGB-flavored, so a wide-gamut (Display P3)
+    /// source is intentionally gamut-mapped down at this single point
+    /// rather than sampled into color math that doesn't account for it.
+    /// Dropping alpha is deliberate too — camera-roll photos have no
+    /// meaningful transparency, so there's nothing to un-premultiply later.
+    func normalizedForSampling() -> UIImage {
+        let pixelWidth = Int((size.width * scale).rounded())
+        let pixelHeight = Int((size.height * scale).rounded())
+        guard pixelWidth > 0, pixelHeight > 0,
+              let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(
+                data: nil,
+                width: pixelWidth,
+                height: pixelHeight,
+                bitsPerComponent: 8,
+                bytesPerRow: pixelWidth * 4,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+              )
+        else { return self }
+
+        // A manually created CGContext has Core Graphics' native
+        // bottom-left origin; `draw(in:)` is a UIKit drawing call that
+        // expects the top-left-origin, y-flipped context
+        // `UIGraphicsBeginImageContext` sets up automatically (and which is
+        // what lets it apply `imageOrientation` correctly) — replicate that
+        // flip by hand since this context bypasses that setup.
+        context.translateBy(x: 0, y: CGFloat(pixelHeight))
+        context.scaleBy(x: scale, y: -scale)
+
+        UIGraphicsPushContext(context)
+        draw(in: CGRect(origin: .zero, size: size))
+        UIGraphicsPopContext()
+
+        guard let normalized = context.makeImage() else { return self }
+        return UIImage(cgImage: normalized, scale: scale, orientation: .up)
     }
 }

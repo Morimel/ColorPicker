@@ -215,6 +215,9 @@ private struct PhotoColorPickerContent: View {
         VStack(spacing: 14) {
             if let activeMarker = viewModel.activeMarker {
                 activeColorCard(for: activeMarker)
+                if let match = viewModel.nearestCatalogMatch(for: activeMarker.rgb) {
+                    CatalogMatchCard(match: match)
+                }
             } else {
                 emptySwatch
             }
