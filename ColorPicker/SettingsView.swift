@@ -3,12 +3,13 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = SettingsViewModel()
+    @State private var showsPaywall = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 32) {
                 Button {
-                    viewModel.selectedAction = .premium
+                    showsPaywall = true
                 } label: {
                     Text("Перейти на Premium")
                         .font(.system(size: 18, weight: .semibold))
@@ -67,11 +68,14 @@ struct SettingsView: View {
             // purchase flow are available. Never report an unperformed restore.
             Alert(
                 title: Text(action.title),
-                message: Text(action == .premium || action == .restore
+                message: Text(action == .restore
                     ? "Покупки пока недоступны. Попробуйте позже."
                     : "Этот раздел пока недоступен. Попробуйте позже."),
                 dismissButton: .default(Text("OK"))
             )
+        }
+        .fullScreenCover(isPresented: $showsPaywall) {
+            PaywallView()
         }
     }
 }

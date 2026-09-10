@@ -50,6 +50,50 @@
         }
       }
     },
+    "+115 ещё" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+115 more"
+          }
+        }
+      }
+    },
+    "−33%" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "33% OFF"
+          }
+        }
+      }
+    },
+    "1 месяц" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 Month"
+          }
+        }
+      }
+    },
+    "1 неделя" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 Week"
+          }
+        }
+      }
+    },
     "CMYK: %@" : {
       "localizations" : {
         "en" : {
@@ -127,12 +171,42 @@
         }
       }
     },
+    "Без рекламы" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No ads"
+          }
+        }
+      }
+    },
+    "в год" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "per year"
+          }
+        }
+      }
+    },
     "В избранное" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add to favorites"
+          }
+        }
+      }
+    },
+    "в неделю" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "per week"
           }
         }
       }
@@ -163,6 +237,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This color may have already been removed from your saved colors."
+          }
+        }
+      }
+    },
+    "Восстановить" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore"
           }
         }
       }
@@ -210,6 +294,26 @@
         }
       }
     },
+    "ГИБКО" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FLEXIBLE"
+          }
+        }
+      }
+    },
+    "Год" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annual"
+          }
+        }
+      }
+    },
     "Готово" : {
       "localizations" : {
         "en" : {
@@ -240,6 +344,16 @@
         }
       }
     },
+    "Закрыть" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
+    },
     "Заметка (необязательно)" : {
       "localizations" : {
         "en" : {
@@ -266,6 +380,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Captured colors"
+          }
+        }
+      }
+    },
+    "Избегайте дорогостоящих ошибок с краской" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avoid costly paint mistakes"
           }
         }
       }
@@ -336,6 +460,16 @@
         }
       }
     },
+    "ЛУЧШЕЕ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BEST VALUE"
+          }
+        }
+      }
+    },
     "Мгновенное определение цветов" : {
       "localizations" : {
         "en" : {
@@ -366,12 +500,65 @@
         }
       }
     },
+    "навсегда" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "forever"
+          }
+        }
+      }
+    },
+    "Навсегда" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lifetime"
+          }
+        }
+      }
+    },
+    "НАВСЕГДА" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FOREVER"
+          }
+        }
+      }
+    },
     "Назад" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Back"
+          }
+        }
+      }
+    },
+    "Найдите такой же цвет у любого бренда" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find the same colour in any paint brand"
+          }
+        }
+      }
+    },
+    "Насовсем" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Own it forever"
           }
         }
       }
@@ -402,6 +589,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn't save your changes. Please try again."
+          }
+        }
+      }
+    },
+    "Неделя" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekly"
           }
         }
       }
@@ -474,12 +671,63 @@
         }
       }
     },
+    "Один платёж" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One payment"
+          }
+        }
+      }
+    },
+    "Одна ошибка с выбором краски стоит 60–170 £" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One wrong paint choice costs £60–170"
+          }
+        }
+      }
+    },
+    "Оплата раз в год" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Billed yearly"
+          }
+        }
+      }
+    },
+    "Оплата раз в неделю" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Billed weekly"
+          }
+        }
+      }
+    },
     "Определитель цвета" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Color Picker"
+          }
+        }
+      }
+    },
+    "Открыть Picker Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock Picker Pro"
           }
         }
       }
@@ -500,6 +748,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "Отмена в любой момент — без сложностей" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel anytime - no hassle"
           }
         }
       }
@@ -544,12 +803,54 @@
         }
       }
     },
+    "Подберите цвет с первого раза" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get the colour right the first time"
+          }
+        }
+      }
+    },
     "Подбирайте идеальные цветовые решения для ваших творческих проектов в один клик" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pick the perfect color combinations for your creative projects in one tap"
+          }
+        }
+      }
+    },
+    "Подбирайте цвета без отвлекающей рекламы" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find colours without distracting ads"
+          }
+        }
+      }
+    },
+    "Подбор между брендами" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cross-Brand Matching"
+          }
+        }
+      }
+    },
+    "ПОДБОР ЦВЕТОВ ИЗ" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MATCH COLOURS FROM"
           }
         }
       }
@@ -588,6 +889,16 @@
         }
       }
     },
+    "Пожизненно" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lifetime"
+          }
+        }
+      }
+    },
     "Поиск по названию" : {
 
     },
@@ -607,6 +918,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Purchases aren't available yet. Please try again later."
+          }
+        }
+      }
+    },
+    "Посмотрите, как цвет будет смотреться на стене" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview colours on your walls before buying"
+          }
+        }
+      }
+    },
+    "Предпросмотр на стене" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wall Preview"
           }
         }
       }
@@ -637,6 +968,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Allow camera access in Settings to detect colors in real time."
+          }
+        }
+      }
+    },
+    "Семейный доступ" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Family Sharing"
           }
         }
       }
@@ -701,12 +1043,44 @@
         }
       }
     },
+    "Точное совпадение цвета" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exact Colour Match"
+          }
+        }
+      }
+    },
+    "Точные названия красок и коды цветов" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reveal exact paint names & colour codes"
+          }
+        }
+      }
+    },
     "Убрать из избранного" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove from favorites"
+          }
+        }
+      }
+    },
+    "Условия" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms"
           }
         }
       }
@@ -750,6 +1124,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Colors are saved on this device, but sharing with widgets isn't available."
+          }
+        }
+      }
+    },
+    "Экономьте деньги" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save Money"
           }
         }
       }
