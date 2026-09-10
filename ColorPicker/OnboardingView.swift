@@ -23,6 +23,7 @@ struct OnboardingView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var isOnboardingVisible: Bool
+    var onFinished: () -> Void = {}
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
 
@@ -111,6 +112,7 @@ struct OnboardingView: View {
             withAnimation(reduceMotion ? nil : AppMotion.spring) {
                 isOnboardingVisible = false
             }
+            onFinished()
         }
     }
 }

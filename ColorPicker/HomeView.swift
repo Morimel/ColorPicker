@@ -50,6 +50,9 @@ struct HomeView: View {
             .navigationDestination(for: UUID.self) { id in
                 SavedColorDetailView(colorID: id)
             }
+            .fullScreenCover(isPresented: $viewModel.showsPaywall) {
+                PaywallView()
+            }
         }
         .onChange(of: incomingURL, initial: true) { _, url in
             guard viewModel.handle(url: url) else { return }
@@ -82,7 +85,7 @@ struct HomeView: View {
     private var optionsGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: Self.gridSpacing), GridItem(.flexible())], spacing: Self.gridSpacing) {
             ForEach(Array(HomeOption.gridOptions.enumerated()), id: \.element.id) { index, option in
-                NavigationLink(value: option.destination) {
+                Button(action: { viewModel.navigate(to: option.destination) }) {
                     HomeOptionButton(option: option, height: cardHeight)
                 }
                 .buttonStyle(SoftPressButtonStyle())
@@ -93,7 +96,7 @@ struct HomeView: View {
     }
 
     private var savedButton: some View {
-        NavigationLink(value: HomeDestination.saved) {
+        Button(action: { viewModel.navigate(to: .saved) }) {
             Text(HomeOption.saved.title)
                 .font(.headline)
                 .fontWeight(.semibold)
@@ -175,6 +178,17 @@ enum HomeDestination: Hashable {
     case converter
     case palettes
     case saved
+
+    /// `nil` for camera/photo, which stay freely reachable — only their
+    /// sampled-value display locks (see `ColorInfoCard.locksWhenFree`).
+    var gatedScreen: GatedScreen? {
+        switch self {
+        case .camera, .photo: nil
+        case .converter: .converter
+        case .palettes: .palettes
+        case .saved: .saved
+        }
+    }
 
     @ViewBuilder
     var view: some View {

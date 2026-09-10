@@ -20,9 +20,18 @@ struct ContentView: View {
                 .environment(viewModel.paletteStore)
                 .overlay {
                     if viewModel.isOnboardingVisible {
-                        OnboardingView(isOnboardingVisible: $viewModel.isOnboardingVisible)
-                            .transition(.opacity)
+                        OnboardingView(
+                            isOnboardingVisible: $viewModel.isOnboardingVisible,
+                            onFinished: {
+                                guard !SubscriptionStore.shared.isSubscribed else { return }
+                                viewModel.showsPostOnboardingPaywall = true
+                            }
+                        )
+                        .transition(.opacity)
                     }
+                }
+                .fullScreenCover(isPresented: $viewModel.showsPostOnboardingPaywall) {
+                    PaywallView()
                 }
                 .onOpenURL { url in
                     viewModel.handleOpenURL(url)

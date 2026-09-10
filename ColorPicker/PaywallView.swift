@@ -195,11 +195,11 @@ private struct PlanCard: View {
                     .tracking(0.3)
                     .foregroundStyle(isSelected ? Color(hex: "8065EC") : .white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 6)
                     .background(isSelected ? Color.white : Color(hex: "727272"), in: Capsule())
-                    .padding(8)
+                    .padding(6)
 
-                VStack(spacing: 6) {
+                VStack(spacing: 4) {
                     Text(plan.title)
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                         .minimumScaleFactor(0.7)
@@ -207,16 +207,16 @@ private struct PlanCard: View {
                     Text(plan.detail)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
-                        .frame(minHeight: 28)
+                        .frame(minHeight: 20)
                 }
                 .padding(.horizontal, 5)
-                .padding(.vertical, 12)
+                .padding(.vertical, 6)
 
                 Rectangle()
                     .fill(.black.opacity(0.12))
                     .frame(height: 1)
 
-                VStack(spacing: 5) {
+                VStack(spacing: 4) {
                     Text(plan.price)
                         .font(.system(size: 19, weight: .bold, design: .rounded))
                         .lineLimit(1)
@@ -226,7 +226,7 @@ private struct PlanCard: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 5)
-                .padding(.vertical, 16)
+                .padding(.vertical, 10)
             }
             .foregroundStyle(.white)
             .multilineTextAlignment(.center)

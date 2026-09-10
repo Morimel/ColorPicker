@@ -184,7 +184,8 @@ private struct CameraColorPickerContent: View {
             ColorInfoCard(
                 rgb: viewModel.detectedColor,
                 ral: viewModel.nearestRAL,
-                trailingAction: viewModel.addCurrentColor
+                trailingAction: viewModel.addCurrentColor,
+                locksWhenFree: true
             )
 
             if let match = viewModel.nearestCatalogMatch {

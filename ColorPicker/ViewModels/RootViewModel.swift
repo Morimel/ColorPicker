@@ -9,6 +9,7 @@ final class RootViewModel {
 
     var incomingURL: URL?
     var isOnboardingVisible: Bool
+    var showsPostOnboardingPaywall = false
 
     init() {
         // Note: a stored property's default value can't reference a sibling

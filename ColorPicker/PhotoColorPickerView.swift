@@ -255,7 +255,8 @@ private struct PhotoColorPickerContent: View {
             hex: marker.rgb.hexString,
             cmyk: marker.rgb.cmykString,
             rgb: marker.rgb.rgbString,
-            trailingAction: viewModel.saveActivePoint
+            trailingAction: viewModel.saveActivePoint,
+            locksWhenFree: true
         )
     }
 

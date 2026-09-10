@@ -5,6 +5,18 @@ import SwiftUI
 @Observable
 final class HomeViewModel {
     var path = NavigationPath()
+    var showsPaywall = false
+
+    /// Pushes `destination` if it's unrestricted (camera/photo) or the user
+    /// still has their one free visit to it (converter/palettes/saved);
+    /// otherwise surfaces the paywall instead of navigating.
+    func navigate(to destination: HomeDestination) {
+        if let gate = destination.gatedScreen, !SubscriptionStore.shared.canVisit(gate) {
+            showsPaywall = true
+            return
+        }
+        path.append(destination)
+    }
 
     /// Applies `url` as a deep link by resetting and re-populating the
     /// navigation path. Returns whether the URL was a recognized deep link
