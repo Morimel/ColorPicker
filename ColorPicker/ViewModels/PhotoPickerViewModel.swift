@@ -47,6 +47,11 @@ final class PhotoPickerViewModel {
     var note: String = ""
     var showSavedToast = false
 
+    /// Defaults to showing the brand row and matching within just one
+    /// catalog — see `CatalogMatchMode`.
+    var catalogMatchMode: CatalogMatchMode = .singleBrand
+    var selectedCatalog: ColorCatalog = .ral
+
     /// How far above the touch point the loupe floats, so the finger doesn't
     /// block the view of what's being magnified (mirrors iOS's own
     /// text-selection loupe).
@@ -73,7 +78,12 @@ final class PhotoPickerViewModel {
     // MARK: Catalog matching
 
     func nearestCatalogMatch(for color: RGBColor) -> NearestCatalogMatch? {
-        NearestCatalogColor.find(for: color)
+        switch catalogMatchMode {
+        case .allBrands:
+            NearestCatalogColor.find(for: color)
+        case .singleBrand:
+            NearestCatalogColor.find(for: color, in: selectedCatalog)
+        }
     }
 
     // MARK: Save

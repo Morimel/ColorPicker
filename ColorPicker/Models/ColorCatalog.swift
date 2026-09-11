@@ -33,3 +33,11 @@ enum ColorCatalog: String, CaseIterable, Identifiable {
         }
     }
 }
+
+/// Which catalogs `NearestCatalogColor.find(for:in:)` searches on Camera and
+/// Photo: either the closest entry across all four bundled catalogs, or
+/// restricted to one brand the user picked via the on-screen brand row (see
+/// `BrandFilterRow` and each screen's three-dots menu).
+enum CatalogMatchMode {
+    case allBrands, singleBrand
+}

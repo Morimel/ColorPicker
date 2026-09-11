@@ -181,8 +181,8 @@ enum HomeDestination: Hashable {
 
     /// Every destination gets exactly one free visit (see
     /// `SubscriptionStore.canVisit`); camera/photo additionally lock their
-    /// sampled-value display after a brief teaser within that visit (see
-    /// `ColorInfoCard.locksWhenFree`).
+    /// catalog-match name/code/hex after a brief teaser within that visit
+    /// (see `CatalogMatchCard.locksWhenFree`).
     var gatedScreen: GatedScreen? {
         switch self {
         case .camera: .camera

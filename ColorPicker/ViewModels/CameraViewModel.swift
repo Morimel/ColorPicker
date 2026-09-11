@@ -18,10 +18,22 @@ final class CameraViewModel {
     var stagedColors: [SavedColor] = []
     var showSavedToast = false
 
+    /// Defaults to showing the brand row and matching within just one
+    /// catalog — see `CatalogMatchMode`.
+    var catalogMatchMode: CatalogMatchMode = .singleBrand
+    var selectedCatalog: ColorCatalog = .ral
+
     private var sampleTimer: Timer?
 
     var nearestRAL: RALColor { RALPalette.nearestRALColor(to: detectedColor) }
-    var nearestCatalogMatch: NearestCatalogMatch? { NearestCatalogColor.find(for: detectedColor) }
+    var nearestCatalogMatch: NearestCatalogMatch? {
+        switch catalogMatchMode {
+        case .allBrands:
+            NearestCatalogColor.find(for: detectedColor)
+        case .singleBrand:
+            NearestCatalogColor.find(for: detectedColor, in: selectedCatalog)
+        }
+    }
 
     init(store: SavedColorsStore) {
         self.store = store

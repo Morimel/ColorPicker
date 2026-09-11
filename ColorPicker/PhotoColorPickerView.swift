@@ -47,6 +47,7 @@ private struct PhotoColorPickerContent: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @Bindable var viewModel: PhotoPickerViewModel
+    @State private var showsCapturedColorsSheet = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -98,12 +99,28 @@ private struct PhotoColorPickerContent: View {
                 }
                 .disabled(viewModel.paletteMarkers.isEmpty)
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker("Сравнение с каталогами", selection: $viewModel.catalogMatchMode) {
+                        Text("Сравнивать со всеми брендами").tag(CatalogMatchMode.allBrands)
+                        Text("Сравнивать с одним брендом").tag(CatalogMatchMode.singleBrand)
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .foregroundStyle(.primary)
+                }
+            }
         }
         .photosPicker(isPresented: $viewModel.isPickerPresented, selection: $viewModel.selectedItem, matching: .images)
         .onChange(of: viewModel.selectedItem) { _, newItem in
             viewModel.loadImage(from: newItem)
         }
         .savedToast(isPresented: $viewModel.showSavedToast, text: "Палитра сохранена")
+        .sheet(isPresented: $showsCapturedColorsSheet) {
+            CapturedColorsSheet(entries: viewModel.paletteMarkers.map { (rgb: $0.rgb, ral: RALPalette.nearestRALColor(to: $0.rgb)) })
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
     }
 
     // MARK: Image section
@@ -158,6 +175,12 @@ private struct PhotoColorPickerContent: View {
                     )
                     .position(x: loupeCenter.x, y: loupeCenter.y)
                     .allowsHitTesting(false)
+                }
+            }
+            .overlay(alignment: .top) {
+                if viewModel.catalogMatchMode == .singleBrand {
+                    BrandFilterRow(selectedCatalog: $viewModel.selectedCatalog)
+                        .padding(.top, 12)
                 }
             }
         }
@@ -216,7 +239,7 @@ private struct PhotoColorPickerContent: View {
             if let activeMarker = viewModel.activeMarker {
                 activeColorCard(for: activeMarker)
                 if let match = viewModel.nearestCatalogMatch(for: activeMarker.rgb) {
-                    CatalogMatchCard(match: match)
+                    CatalogMatchCard(match: match, locksWhenFree: true)
                 }
             } else {
                 emptySwatch
@@ -262,6 +285,8 @@ private struct PhotoColorPickerContent: View {
 
     private var paletteStrip: some View {
         ColorStripView(colors: viewModel.paletteMarkers.map(\.rgb))
+            .contentShape(Rectangle())
+            .onTapGesture { showsCapturedColorsSheet = true }
     }
 }
 

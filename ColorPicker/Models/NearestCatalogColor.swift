@@ -13,7 +13,10 @@ struct NearestCatalogMatch: Equatable {
 /// combined) for the closest match to a sampled/converted color — a much richer
 /// comparison than the app's small ~23-color RAL starter palette used for saved colors.
 enum NearestCatalogColor {
-    static func find(for rgb: RGBColor) -> NearestCatalogMatch? {
+    /// Finds the closest entry to `rgb`. Pass `catalog` to restrict the
+    /// search to just that one bundled catalog (e.g. only RAL); `nil`
+    /// (the default) searches all four and returns whichever is closest.
+    static func find(for rgb: RGBColor, in catalog: ColorCatalog? = nil) -> NearestCatalogMatch? {
         var best: (catalog: ColorCatalog, name: String, code: String, hex: String, distance: Int)?
 
         func consider<T: ColorDataProtocol>(_ catalog: ColorCatalog, _ entries: [T]) {
@@ -25,10 +28,10 @@ enum NearestCatalogColor {
             }
         }
 
-        consider(.pantone, PantoneColor.pantonePalette)
-        consider(.ikea, IKEAColor.ikeaPalette)
-        consider(.ral, RALCatalogColor.classic)
-        consider(.sherwinWilliams, SherwinWilliamsColor.sherwinWilliamsPalette)
+        if catalog == nil || catalog == .pantone { consider(.pantone, PantoneColor.pantonePalette) }
+        if catalog == nil || catalog == .ikea { consider(.ikea, IKEAColor.ikeaPalette) }
+        if catalog == nil || catalog == .ral { consider(.ral, RALCatalogColor.classic) }
+        if catalog == nil || catalog == .sherwinWilliams { consider(.sherwinWilliams, SherwinWilliamsColor.sherwinWilliamsPalette) }
 
         guard let best else { return nil }
         return NearestCatalogMatch(catalog: best.catalog, name: best.name, code: best.code, hex: best.hex)

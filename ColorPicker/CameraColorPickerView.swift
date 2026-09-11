@@ -47,6 +47,7 @@ private struct CameraColorPickerContent: View {
 
     @Bindable var viewModel: CameraViewModel
     @FocusState private var isNoteFocused: Bool
+    @State private var showsCapturedColorsSheet = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -102,10 +103,26 @@ private struct CameraColorPickerContent: View {
                 }
                 .disabled(viewModel.stagedColors.isEmpty)
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker("Сравнение с каталогами", selection: $viewModel.catalogMatchMode) {
+                        Text("Сравнивать со всеми брендами").tag(CatalogMatchMode.allBrands)
+                        Text("Сравнивать с одним брендом").tag(CatalogMatchMode.singleBrand)
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .foregroundStyle(.primary)
+                }
+            }
         }
         .onAppear(perform: viewModel.requestPermissionIfNeeded)
         .onDisappear(perform: viewModel.onDisappear)
         .savedToast(isPresented: $viewModel.showSavedToast, text: "Сохранено")
+        .sheet(isPresented: $showsCapturedColorsSheet) {
+            CapturedColorsSheet(entries: viewModel.stagedColors.map { ($0.rgb, $0.ral) })
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
     }
 
     @ViewBuilder
@@ -134,6 +151,12 @@ private struct CameraColorPickerContent: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            }
+            .overlay(alignment: .top) {
+                if viewModel.catalogMatchMode == .singleBrand {
+                    BrandFilterRow(selectedCatalog: $viewModel.selectedCatalog)
+                        .padding(.top, 12)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.secondarySystemBackground))
@@ -189,7 +212,7 @@ private struct CameraColorPickerContent: View {
             )
 
             if let match = viewModel.nearestCatalogMatch {
-                CatalogMatchCard(match: match)
+                CatalogMatchCard(match: match, locksWhenFree: true)
             }
 
             TextField("Заметка (необязательно)", text: $viewModel.note)
@@ -224,6 +247,8 @@ private struct CameraColorPickerContent: View {
             }
             .frame(height: 56)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(Rectangle())
+            .onTapGesture { showsCapturedColorsSheet = true }
         }
     }
 }
