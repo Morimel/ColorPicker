@@ -106,7 +106,7 @@ private struct SavedColorsContent: View {
             ToolbarItem(placement: .topBarLeading) {
                 if viewModel.isSelecting {
                     Button("Отмена", action: viewModel.exitSelectionMode)
-                        .foregroundStyle(Color.tealAccent)
+                        .foregroundStyle(Color.appAccent)
                 } else {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
@@ -137,7 +137,7 @@ private struct SavedColorsContent: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: viewModel.toggleSelectAll) {
                         Image(systemName: viewModel.isAllSelected ? "checkmark.circle.fill" : "checkmark.circle")
-                            .foregroundStyle(Color.tealAccent)
+                            .foregroundStyle(Color.appAccent)
                     }
                 }
             }
@@ -181,7 +181,7 @@ private struct SavedColorsContent: View {
         } label: {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(isSelected ? Color.tealAccent : .secondary)
+                .foregroundStyle(isSelected ? Color.appAccent : .secondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 36)
                 .background {
@@ -328,7 +328,7 @@ private struct SavedColorsContent: View {
     private func selectionIndicator(isSelected: Bool) -> some View {
         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
             .font(.system(size: 22))
-            .foregroundStyle(isSelected ? Color.tealAccent : Color(.tertiaryLabel))
+            .foregroundStyle(isSelected ? Color.appAccent : Color(.tertiaryLabel))
     }
 
     private func emptyState(text: String) -> some View {
@@ -379,7 +379,7 @@ private struct SavedColorGridCell: View {
     private func selectionBadge(systemImage: String, tinted: Bool) -> some View {
         Image(systemName: systemImage)
             .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(tinted ? Color.tealAccent : .white)
+            .foregroundStyle(tinted ? Color.appAccent : .white)
             .padding(5)
             .background(.black.opacity(tinted ? 0 : 0.25), in: Circle())
             .padding(6)
@@ -398,7 +398,7 @@ private struct SavedPaletteGridCell: View {
                     if showsSelection {
                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(isSelected ? Color.tealAccent : .white)
+                            .foregroundStyle(isSelected ? Color.appAccent : .white)
                             .padding(5)
                             .background(.black.opacity(isSelected ? 0 : 0.25), in: Circle())
                             .padding(6)

@@ -69,7 +69,7 @@ private struct AddPaletteColorsContent: View {
                             HStack {
                                 ColorInfoCard(rgb: entry.rgb, ral: entry.ral)
                                 Image(systemName: viewModel.selectedIDs.contains(entry.id) ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(Color.tealAccent)
+                                    .foregroundStyle(Color.appAccent)
                             }
                         }
                         .buttonStyle(.plain)

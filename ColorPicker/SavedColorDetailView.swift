@@ -59,7 +59,7 @@ private struct SavedColorDetailContent: View {
                                   systemImage: color.isFavorite ? "star.fill" : "star")
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.tealAccent)
+                        .tint(.appAccent)
                         ShareLink(item: color.shareText) {
                             Label("Поделиться", systemImage: "square.and.arrow.up")
                         }

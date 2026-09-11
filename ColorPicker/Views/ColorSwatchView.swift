@@ -14,7 +14,7 @@ struct ColorSwatchView: View {
                 .aspectRatio(1, contentMode: .fit)
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(isSelected ? Color.tealAccent : Color(.separator),
+                        .strokeBorder(isSelected ? Color.appAccent : Color(.separator),
                                       lineWidth: isSelected ? 3 : 0.5)
                 }
 

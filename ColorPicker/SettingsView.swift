@@ -24,22 +24,27 @@ struct SettingsView: View {
                 VStack(spacing: 0) {
                     ForEach(SettingsAction.rows) { action in
                         Button {
-                            viewModel.selectedAction = action
+                            handleTap(on: action)
                         } label: {
                             HStack {
                                 Text(action.title)
                                     .font(.system(size: 18))
                                     .foregroundStyle(.primary)
                                 Spacer(minLength: 12)
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color(.tertiaryLabel))
+                                if action == .restore && viewModel.isRestoring {
+                                    ProgressView()
+                                } else {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(Color(.tertiaryLabel))
+                                }
                             }
                             .padding(.trailing, 16)
                             .frame(minHeight: 46)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(SoftPressButtonStyle())
+                        .disabled(action == .restore && viewModel.isRestoring)
 
                         Divider()
                     }
@@ -58,24 +63,38 @@ struct SettingsView: View {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 22, weight: .regular))
-                        .foregroundStyle(Color.tealAccent)
+                        .foregroundStyle(Color.appAccent)
                 }
                 .accessibilityLabel("Назад")
             }
         }
         .alert(item: $viewModel.selectedAction) { action in
-            // Destinations can be connected when the app's support links and
-            // purchase flow are available. Never report an unperformed restore.
+            // Destinations can be connected once the app's support links are
+            // available. Restore is handled separately, via the real flow.
             Alert(
                 title: Text(action.title),
-                message: Text(action == .restore
-                    ? "Покупки пока недоступны. Попробуйте позже."
-                    : "Этот раздел пока недоступен. Попробуйте позже."),
+                message: Text("Этот раздел пока недоступен. Попробуйте позже."),
                 dismissButton: .default(Text("OK"))
             )
         }
+        .alert("Восстановить покупки", isPresented: Binding(
+            get: { viewModel.restoreResultMessage != nil },
+            set: { if !$0 { viewModel.restoreResultMessage = nil } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text(viewModel.restoreResultMessage ?? "")
+        }
         .fullScreenCover(isPresented: $showsPaywall) {
             PaywallView()
+        }
+    }
+
+    private func handleTap(on action: SettingsAction) {
+        if action == .restore {
+            Task { await viewModel.restorePurchases() }
+        } else {
+            viewModel.selectedAction = action
         }
     }
 }

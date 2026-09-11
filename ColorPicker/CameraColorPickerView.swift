@@ -173,7 +173,7 @@ private struct CameraColorPickerContent: View {
                 }
             }
             .font(.subheadline.weight(.semibold))
-            .foregroundStyle(Color.tealAccent)
+            .foregroundStyle(Color.appAccent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.secondarySystemBackground))

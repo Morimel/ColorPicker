@@ -19,7 +19,7 @@ struct CatalogMatchCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(match.catalog.displayName.uppercased())
                     .font(.caption2.weight(.bold))
-                    .foregroundStyle(Color.tealAccent)
+                    .foregroundStyle(Color.appAccent)
                 Text(match.name)
                     .font(.subheadline)
                     .fontWeight(.bold)

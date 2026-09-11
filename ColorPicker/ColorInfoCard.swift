@@ -89,7 +89,7 @@ struct ColorInfoCard: View {
                         .frame(minWidth: 44, minHeight: 44)
                 }
                 .buttonStyle(.borderless)
-                .foregroundStyle(Color.tealAccent)
+                .foregroundStyle(Color.appAccent)
                 .accessibilityLabel("Копировать цвет \(hex)")
             }
 
@@ -98,7 +98,7 @@ struct ColorInfoCard: View {
                     Image(systemName: trailingIcon)
                         .font(.system(size: 26))
                         .contentTransition(.symbolEffect(.replace))
-                        .foregroundStyle(Color.tealAccent)
+                        .foregroundStyle(Color.appAccent)
                 }
                 .buttonStyle(SoftPressButtonStyle())
             }
@@ -122,7 +122,7 @@ struct ColorInfoCard: View {
             // and a shaky one keeps it locked. One teaser window per visit,
             // covering everything sampled afterward, avoids both.
             guard locksWhenFree else { return }
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
             guard !Task.isCancelled else { return }
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
                 isRevealed = false

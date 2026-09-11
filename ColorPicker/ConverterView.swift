@@ -175,7 +175,7 @@ private struct ConverterContent: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(viewModel.hasEnteredColor ? Color.tealAccent : Color(.systemGray4))
+                        .fill(viewModel.hasEnteredColor ? Color.appAccent : Color(.systemGray4))
                 )
         }
         .buttonStyle(SoftPressButtonStyle())

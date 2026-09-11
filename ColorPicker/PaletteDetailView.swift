@@ -100,7 +100,7 @@ private struct PaletteDetailContent: View {
                     .padding(.vertical, 8)
             }
             .buttonStyle(.borderedProminent)
-            .tint(Color.tealAccent)
+            .tint(Color.appAccent)
             .padding(16)
             .background(.regularMaterial)
         }

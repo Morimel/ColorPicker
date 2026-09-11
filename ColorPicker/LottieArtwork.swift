@@ -46,7 +46,7 @@ struct LottieArtwork: View {
                 Image(systemName: asset.fallback)
                     .resizable()
                     .scaledToFit()
-                    .foregroundStyle(Color.tealAccent)
+                    .foregroundStyle(Color.appAccent)
                     .padding(12)
             }
         }

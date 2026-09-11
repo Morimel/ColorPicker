@@ -34,7 +34,7 @@ struct PaywallView: View {
                 .padding(.horizontal, 32)
                 .padding(.top, 16)
                 .padding(.bottom, 16)
-                .background(Color.black.ignoresSafeArea(edges: .bottom))
+                .background(Color.white.ignoresSafeArea(edges: .bottom))
         }
         .background {
             GeometryReader { geometry in
@@ -52,7 +52,15 @@ struct PaywallView: View {
         .alert("Перейти на Premium", isPresented: $viewModel.showsUnavailableAlert) {
             Button("OK") {}
         } message: {
-            Text("Покупки пока недоступны. Попробуйте позже.")
+            Text("Этот раздел пока недоступен. Попробуйте позже.")
+        }
+        .alert("Покупки", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text(viewModel.errorMessage ?? "")
         }
     }
 
@@ -60,10 +68,8 @@ struct PaywallView: View {
         Button(action: { dismiss() }) {
             Image(systemName: "xmark")
                 .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.7), radius: 3)
+                .foregroundStyle(Color(hex: "222330"))
                 .frame(width: 44, height: 44)
-                .background(Color(hex: "222330"), in: Circle())
                 .contentShape(Rectangle())
         }
         .accessibilityLabel("Закрыть")
@@ -76,14 +82,12 @@ struct PaywallView: View {
     private var header: some View {
         ZStack(alignment: .bottom) {
             Text("Подберите цвет с первого раза")
-                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                .font(.system(size: 34, weight: .black, design: .rounded))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.9), radius: 6, y: 2)
+                .foregroundStyle(Color(hex: "222330"))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 18)
                 .padding(.vertical, 14)
-                .background(Color(hex: "222330"), in: RoundedRectangle(cornerRadius: 24))
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
         }
@@ -116,45 +120,69 @@ struct PaywallView: View {
 
     private var ctaSection: some View {
         VStack(spacing: 18) {
-            Button(action: viewModel.unlockTapped) {
-                Text("Открыть Picker Pro")
-                    .font(.system(size: 23, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 17)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(hex: "9784F5"), Color(hex: "7060DB")],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        in: RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    )
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .strokeBorder(Color(hex: "AC9CF8").opacity(0.6), lineWidth: 1)
+            Button(action: purchaseTapped) {
+                Group {
+                    if viewModel.isPurchasing {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text("Открыть Picker Pro")
                     }
-                    .shadow(color: Color(hex: "8065EC").opacity(0.3), radius: 18, y: 4)
+                }
+                .font(.system(size: 23, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 17)
+                .background(
+                    LinearGradient(
+                        colors: [Color(hex: "9784F5"), Color(hex: "7060DB")],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .strokeBorder(Color(hex: "AC9CF8").opacity(0.6), lineWidth: 1)
+                }
+                .shadow(color: Color(hex: "8065EC").opacity(0.3), radius: 18, y: 4)
             }
             .buttonStyle(SoftPressButtonStyle())
+            .disabled(viewModel.isPurchasing)
 
             HStack(spacing: 6) {
-                footerLink("Восстановить")
+                footerLink("Восстановить", action: restoreTapped)
                 Spacer(minLength: 4)
-                footerLink("Условия")
+                footerLink("Условия") { viewModel.showsUnavailableAlert = true }
                 Spacer(minLength: 4)
-                footerLink("Конфиденциальность")
+                footerLink("Конфиденциальность") { viewModel.showsUnavailableAlert = true }
             }
             .font(.system(size: 12))
         }
     }
 
-    private func footerLink(_ title: LocalizedStringKey) -> some View {
-        Button(action: viewModel.unlockTapped) {
+    private func footerLink(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             Text(title)
-                .foregroundStyle(.white.opacity(0.45))
+                .foregroundStyle(Color(hex: "222330").opacity(0.6))
         }
         .buttonStyle(.plain)
+    }
+
+    private func purchaseTapped() {
+        Task {
+            if await viewModel.unlockTapped() {
+                dismiss()
+            }
+        }
+    }
+
+    private func restoreTapped() {
+        Task {
+            if await viewModel.restoreTapped() {
+                dismiss()
+            }
+        }
     }
 }
 
@@ -165,18 +193,19 @@ private struct FeatureRow: View {
 
     var body: some View {
         HStack(spacing: 16) {
+            Spacer(minLength: 0)
             Image(systemName: feature.icon)
-                .font(.system(size: 23, weight: .medium))
-                .frame(width: 30, height: 30)
+                .font(.system(size: 27, weight: .medium))
+                .frame(width: 34, height: 34)
             Text(feature.title)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .heavy, design: .rounded))
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Color(hex: "222330"))
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color(hex: "222330"), in: RoundedRectangle(cornerRadius: 20))
+        .offset(y: -40)
     }
 }
 
@@ -276,32 +305,18 @@ private struct LoopingVideoBackground: UIViewRepresentable {
     final class Coordinator {
         private var player: AVQueuePlayer?
         private var looper: AVPlayerLooper?
-        private var preparationTask: Task<Void, Never>?
 
         func play(url: URL, in view: PlayerContainerView) {
-            preparationTask = Task { @MainActor [weak self, weak view] in
-                let asset = AVURLAsset(url: url)
-                guard let track = try? await asset.loadTracks(withMediaType: .video).first,
-                      let naturalSize = try? await track.load(.naturalSize),
-                      let transform = try? await track.load(.preferredTransform),
-                      !Task.isCancelled,
-                      let self, let view else { return }
-                let rect = CGRect(origin: .zero, size: naturalSize).applying(transform)
-                view.videoSize = CGSize(width: abs(rect.width), height: abs(rect.height))
-                view.setNeedsLayout()
-                view.layoutIfNeeded()
-                let player = AVQueuePlayer()
-                player.isMuted = true
-                self.looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(asset: asset))
-                self.player = player
-                view.playerLayer.player = player
-                player.play()
-            }
+            let asset = AVURLAsset(url: url)
+            let player = AVQueuePlayer()
+            player.isMuted = true
+            looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(asset: asset))
+            self.player = player
+            view.playerLayer.player = player
+            player.play()
         }
 
         func stop() {
-            preparationTask?.cancel()
-            preparationTask = nil
             player?.pause()
             looper?.disableLooping()
             player?.removeAllItems()
@@ -312,17 +327,16 @@ private struct LoopingVideoBackground: UIViewRepresentable {
 
     final class PlayerContainerView: UIView {
         let playerLayer = AVPlayerLayer()
-        // Read from the asset before playback, independent of the looper's
-        // asynchronously inserted/replaced current items.
-        var videoSize: CGSize = .zero
 
         override func layoutSubviews() {
             super.layoutSubviews()
-            let size = videoSize
-            let height = size.width > 0 ? bounds.width * size.height / size.width : bounds.height
             CATransaction.begin()
             CATransaction.setDisableActions(true)
-            playerLayer.frame = CGRect(x: 0, y: 0, width: bounds.width, height: height)
+            // Fill the whole container (cropping instead of letterboxing) so
+            // no gap of the container's own background ever shows through,
+            // regardless of how the video's aspect ratio compares to the
+            // screen's.
+            playerLayer.frame = bounds
             CATransaction.commit()
         }
 
@@ -331,7 +345,7 @@ private struct LoopingVideoBackground: UIViewRepresentable {
             backgroundColor = .black
             isOpaque = true
             clipsToBounds = true
-            playerLayer.videoGravity = .resizeAspect
+            playerLayer.videoGravity = .resizeAspectFill
             layer.addSublayer(playerLayer)
         }
 

@@ -915,7 +915,11 @@
         }
       }
     },
+    "Покупки" : {
+
+    },
     "Покупки пока недоступны. Попробуйте позже." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

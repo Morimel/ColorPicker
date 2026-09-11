@@ -76,7 +76,7 @@ struct OnboardingView: View {
         HStack(spacing: 8) {
             ForEach(OnboardingPage.allCases) { page in
                 Circle()
-                    .fill(page == viewModel.currentPage ? Color.tealAccent : Color(.systemGray4))
+                    .fill(page == viewModel.currentPage ? Color.appAccent : Color(.systemGray4))
                     .frame(width: 8, height: 8)
             }
         }
@@ -92,8 +92,12 @@ struct OnboardingView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
                 .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.tealAccent)
+                    LinearGradient(
+                        colors: [Color(hex: "9784F5"), Color(hex: "7060DB")],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                 )
         }
         .buttonStyle(SoftPressButtonStyle())
@@ -213,7 +217,7 @@ struct QuickFindPage: View {
 // MARK: - Helpers
 
 extension Color {
-    static let tealAccent = Color(hex: "3E8E9E")
+    static let appAccent = Color(hex: "8065EC")
 
     init(hex: String) {
         let hexString = hex.trimmingCharacters(in: .alphanumerics.inverted)

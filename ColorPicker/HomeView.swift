@@ -179,11 +179,14 @@ enum HomeDestination: Hashable {
     case palettes
     case saved
 
-    /// `nil` for camera/photo, which stay freely reachable — only their
-    /// sampled-value display locks (see `ColorInfoCard.locksWhenFree`).
+    /// Every destination gets exactly one free visit (see
+    /// `SubscriptionStore.canVisit`); camera/photo additionally lock their
+    /// sampled-value display after a brief teaser within that visit (see
+    /// `ColorInfoCard.locksWhenFree`).
     var gatedScreen: GatedScreen? {
         switch self {
-        case .camera, .photo: nil
+        case .camera: .camera
+        case .photo: .photo
         case .converter: .converter
         case .palettes: .palettes
         case .saved: .saved
@@ -262,7 +265,7 @@ private struct PalettesContent: View {
             if viewModel.isSelecting {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Отмена", action: viewModel.exitSelectionMode)
-                        .foregroundStyle(Color.tealAccent)
+                        .foregroundStyle(Color.appAccent)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
@@ -282,7 +285,7 @@ private struct PalettesContent: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: viewModel.toggleSelectAll) {
                         Image(systemName: viewModel.isAllSelected ? "checkmark.circle.fill" : "checkmark.circle")
-                            .foregroundStyle(Color.tealAccent)
+                            .foregroundStyle(Color.appAccent)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -344,7 +347,7 @@ private struct PalettesContent: View {
                     .font(.subheadline.weight(.semibold))
             }
             .buttonStyle(.borderedProminent)
-            .tint(Color.tealAccent)
+            .tint(Color.appAccent)
             .padding(.top, 8)
         }
     }
@@ -389,7 +392,7 @@ private struct PalettesContent: View {
     private func selectionIndicator(isSelected: Bool) -> some View {
         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
             .font(.system(size: 22))
-            .foregroundStyle(isSelected ? Color.tealAccent : Color(.tertiaryLabel))
+            .foregroundStyle(isSelected ? Color.appAccent : Color(.tertiaryLabel))
     }
 }
 
