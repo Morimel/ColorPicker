@@ -25,6 +25,7 @@ final class PhotoPickerViewModel {
     }
 
     private let paletteStore: PaletteStore
+    private let savedColorsStore: SavedColorsStore
 
     var selectedItem: PhotosPickerItem?
     var selectedImage: UIImage?
@@ -71,8 +72,9 @@ final class PhotoPickerViewModel {
         return CGSize(width: CGFloat(cgImage.width), height: CGFloat(cgImage.height))
     }
 
-    init(paletteStore: PaletteStore) {
+    init(paletteStore: PaletteStore, savedColorsStore: SavedColorsStore) {
         self.paletteStore = paletteStore
+        self.savedColorsStore = savedColorsStore
     }
 
     // MARK: Catalog matching
@@ -88,11 +90,16 @@ final class PhotoPickerViewModel {
 
     // MARK: Save
 
+    /// Commits the picked colors both grouped as one new palette (so they
+    /// show up in the Saved tab's "Палитры" segment) and individually (so
+    /// they also show up in its "Цвета" grid) — the same dual save Camera's
+    /// `saveStagedColors()` does.
     func savePalette() {
         guard !paletteMarkers.isEmpty else { return }
         let colors = paletteMarkers.map { marker in
             SavedColor(rgb: marker.rgb, ral: RALPalette.nearestRALColor(to: marker.rgb), note: "", createdAt: Date())
         }
+        guard savedColorsStore.add(colors) else { return }
         paletteStore.add(colors: colors)
         paletteMarkers = []
         showSavedToast = true

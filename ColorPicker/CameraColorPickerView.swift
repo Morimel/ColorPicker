@@ -15,6 +15,7 @@ import AVFoundation
 /// than receiving it per call — is created once here and handed down.
 struct CameraColorPickerView: View {
     @Environment(SavedColorsStore.self) private var savedColorsStore
+    @Environment(PaletteStore.self) private var paletteStore
     @State private var viewModel: CameraViewModel?
 
     var body: some View {
@@ -31,7 +32,7 @@ struct CameraColorPickerView: View {
         }
         .task {
             if viewModel == nil {
-                viewModel = CameraViewModel(store: savedColorsStore)
+                viewModel = CameraViewModel(store: savedColorsStore, paletteStore: paletteStore)
             }
         }
     }

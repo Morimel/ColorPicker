@@ -1,0 +1,133 @@
+{
+  "identifier" : "A253269B-8B9C-44A8-9917-AA0C3F7F82BF",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "238.37",
+      "familyShareable" : false,
+      "internalID" : "D38E550E-B030-465D-A4BD-0D6FB2D0B897",
+      "localizations" : [
+        {
+          "description" : "Unlock Picker Pro forever with a single payment.",
+          "displayName" : "Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.IsaMelsov.ColorPicker.pro.lifetime",
+      "referenceName" : "Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "0",
+    "_developerTeamID" : "0",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "C7F87546-E318-4432-9E7D-FD9D4B4ED564",
+      "localizations" : [],
+      "name" : "Picker Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "40.56",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "F16108FC-7362-4781-8C8D-EBCAE13B5FA9",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Full access to Picker Pro, billed weekly.",
+              "displayName" : "Weekly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.IsaMelsov.ColorPicker.pro.week",
+          "recurringSubscriptionPeriod" : "P1W",
+          "referenceName" : "Weekly",
+          "subscriptionGroupID" : "C7F87546-E318-4432-9E7D-FD9D4B4ED564",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : []
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "171.97",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "4AA384C4-21B7-45D5-81FA-D88EE846D38E",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Full access to Picker Pro, billed yearly. Best value.",
+              "displayName" : "Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.IsaMelsov.ColorPicker.pro.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Annual",
+          "subscriptionGroupID" : "C7F87546-E318-4432-9E7D-FD9D4B4ED564",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : []
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

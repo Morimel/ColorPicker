@@ -6,6 +6,7 @@ import AVFoundation
 @Observable
 final class CameraViewModel {
     private let store: SavedColorsStore
+    private let paletteStore: PaletteStore
 
     private(set) var cameraController = CameraFrameController()
     var permissionStatus: AVAuthorizationStatus
@@ -35,8 +36,9 @@ final class CameraViewModel {
         }
     }
 
-    init(store: SavedColorsStore) {
+    init(store: SavedColorsStore, paletteStore: PaletteStore) {
         self.store = store
+        self.paletteStore = paletteStore
         permissionStatus = AVCaptureDevice.authorizationStatus(for: .video)
     }
 
@@ -71,8 +73,13 @@ final class CameraViewModel {
         stagedColors.append(entry)
     }
 
+    /// Commits the staged colors both individually (so they show up in the
+    /// Saved tab's "Цвета" grid) and grouped as one new palette (so they also
+    /// show up in its "Палитры" segment) — the same dual save Photo's
+    /// `savePalette()` does.
     func saveStagedColors() {
         guard !stagedColors.isEmpty, store.add(stagedColors) else { return }
+        paletteStore.add(colors: stagedColors)
         stagedColors.removeAll()
         showSavedToast = true
     }

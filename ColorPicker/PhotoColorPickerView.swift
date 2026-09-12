@@ -16,6 +16,7 @@ import UIKit
 /// than receiving it per call — is created once here and handed down.
 struct PhotoColorPickerView: View {
     @Environment(PaletteStore.self) private var paletteStore
+    @Environment(SavedColorsStore.self) private var savedColorsStore
     @State private var viewModel: PhotoPickerViewModel?
 
     var body: some View {
@@ -32,7 +33,7 @@ struct PhotoColorPickerView: View {
         }
         .task {
             if viewModel == nil {
-                viewModel = PhotoPickerViewModel(paletteStore: paletteStore)
+                viewModel = PhotoPickerViewModel(paletteStore: paletteStore, savedColorsStore: savedColorsStore)
             }
         }
     }
